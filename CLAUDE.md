@@ -117,6 +117,21 @@ back. `verify.html` and the code comments keep the spec terms; the UI does not.
 One accuracy note: the capacity label says **bytes**, not characters. Danish
 `æ` costs two, so "characters" would be wrong.
 
+## Never spell out a closing script tag in a source that gets inlined
+
+`build.mjs` refuses any file in `INLINED` containing one, because the built page
+wraps each bundle in a `<script>` element and that tag ends it. Everything after
+becomes markup. It has bitten three times:
+
+1. `redirectPage()` emitting a hostile destination through `JSON.stringify`.
+2. A comment in `verify.html`, which hung the suite at "running...".
+3. A comment in `qr-render.js` describing bug 1, which broke the built page
+   entirely: the meta-refresh string in the same file then parsed as real HTML
+   and navigated the app away on load.
+
+Number 3 only appeared in `dist`, never in the dev page, because the dev page
+loads the file with `src`. Test the built output, not only `npm start`.
+
 ## Generating HTML is where the injections live
 
 `R.redirectPage()` writes a page from a user-supplied destination, so it is in

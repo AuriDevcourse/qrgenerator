@@ -101,6 +101,12 @@
           <summary>Colour <span class="sumdots" aria-hidden="true" id="sum-colour"></span></summary>
           <div class="groupbody">
             <div class="chips" id="colorchips"></div>
+            <div class="brandrow">
+              <button type="button" class="btn outline" id="tokensbtn">Import brand colours</button>
+              <button type="button" class="btn outline" id="tokensclear" hidden>Back to defaults</button>
+              <input type="file" id="tokensfile" accept=".json,application/json" hidden>
+              <span class="hint" id="tokensnote">Load a <code>tokens.json</code> and its colours become chips.</span>
+            </div>
 
             <div class="swatchrow">
               <label for="fg">Modules <span class="what">the squares that carry the data</span></label>
@@ -393,6 +399,15 @@
               <div class="chips" id="printchips"></div>
 
               <p class="sublabel topgap">Print a sheet of them</p>
+              <div class="field">
+                <label for="printtpl">Layout</label>
+                <select id="printtpl">
+                  <option value="labels">Label sheet on A4</option>
+                  <option value="badges">Badges, 85 x 54 mm</option>
+                  <option value="tent">Table tent on A5, folds in half</option>
+                  <option value="poster">Poster, one per page</option>
+                </select>
+              </div>
               <div class="printrow">
                 <label for="printmm">Each one<span class="val"><input type="number" id="printmm" value="40" min="5" max="400" step="1"> mm wide</span></label>
                 <label for="printcount">How many<span class="val"><input type="number" id="printcount" value="12" min="1" max="200" step="1"></span></label>

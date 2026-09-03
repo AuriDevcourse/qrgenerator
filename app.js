@@ -120,6 +120,7 @@
   ];
 
   var RECENT_KEY = 'quietzone.recent.v1';
+  var TOKENS_KEY = 'quietzone.tokens.v1';
 
   // ---- persistence --------------------------------------------------------
 
@@ -366,10 +367,11 @@
   function renderColourChips() {
     $('#colorchips').innerHTML = COLOUR_CHIPS.map(function (c, i) {
       var sw = c.gradOn
-        ? 'background:linear-gradient(120deg,' + c.gradFrom + ',' + c.gradTo + ')'
-        : 'background:' + c.fg;
-      return '<button type="button" class="chip-btn" data-chip="' + i + '">' +
-        '<span class="chip-dot" style="' + sw + ';outline:1px solid ' + c.bg + '"></span>' +
+        ? 'background:linear-gradient(120deg,' + colour(c.gradFrom, '#000') + ',' + colour(c.gradTo, '#000') + ')'
+        : 'background:' + colour(c.swatch || c.fg, '#000');
+      return '<button type="button" class="chip-btn' + (c.weak ? ' weak' : '') +
+        '" data-chip="' + i + '"' + (c.weak ? ' title="Too light for the modules"' : '') + '>' +
+        '<span class="chip-dot" style="' + sw + ';outline:1px solid ' + colour(c.bg, '#fff') + '"></span>' +
         esc(c.name) + '</button>';
     }).join('');
   }
@@ -748,6 +750,89 @@
     if (past.at >= past.stack.length - 1) return;
     past.at++;
     restore(past.stack[past.at]);
+  }
+
+  // ---- brand colours from a tokens file -----------------------------------
+  //
+  // Walks any JSON and collects hex leaves, so both the design-token shape
+  // ({ value: "#ce0f2e" }) and a flat { name: "#ce0f2e" } map work. A brand
+  // change then propagates by re-importing rather than by editing this file.
+
+  function collectColours(node, path, out) {
+    if (out.length > 60) return out;
+    if (typeof node === 'string') {
+      var c = colour(node, null);
+      if (c) out.push({ name: path[path.length - 1] || c, colour: c });
+      return out;
+    }
+    if (!node || typeof node !== 'object') return out;
+    if (typeof node.value === 'string') {
+      var v = colour(node.value, null);
+      if (v) {
+        out.push({ name: path[path.length - 1] || v, colour: v });
+        return out;
+      }
+    }
+    Object.keys(node).forEach(function (k) {
+      if (k === '$schema' || k === 'rgb' || k === 'cmyk') return;
+      collectColours(node[k], path.concat(k), out);
+    });
+    return out;
+  }
+
+  function tidyName(n) {
+    return String(n).replace(/[-_]+/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+
+  function savedTokens() {
+    try { return JSON.parse(safeGet(TOKENS_KEY) || 'null'); } catch (e) { return null; }
+  }
+
+  function applyTokens(list) {
+    if (!list || !list.length) return;
+    // Anything under 3:1 on white cannot carry the modules, so it is offered
+    // as a frame or eye colour instead of silently producing a dead code.
+    COLOUR_CHIPS = list.map(function (t) {
+      var usable = R.contrast(t.colour, '#ffffff') >= 3;
+      return {
+        name: tidyName(t.name), fg: usable ? t.colour : '#0d0d0d',
+        bg: '#ffffff', gradOn: false,
+        swatch: t.colour, weak: !usable
+      };
+    }).concat([{ name: 'Inverted', fg: '#f2f2f2', bg: '#0d0d0d', gradOn: false }]);
+    renderColourChips();
+    $('#tokensclear').hidden = false;
+  }
+
+  function loadTokens(text, label) {
+    var note = $('#tokensnote');
+    var data;
+    try { data = JSON.parse(text); }
+    catch (e) {
+      note.textContent = 'That file is not valid JSON.';
+      note.classList.add('bad');
+      return;
+    }
+    var list = collectColours(data, [], []);
+    if (!list.length) {
+      note.textContent = 'No colours found in that file.';
+      note.classList.add('bad');
+      return;
+    }
+    // De-duplicate: token files often repeat a value under several names.
+    var seen = {};
+    list = list.filter(function (t) {
+      if (seen[t.colour]) return false;
+      seen[t.colour] = 1;
+      return true;
+    }).slice(0, 12);
+
+    note.classList.remove('bad');
+    var weak = list.filter(function (t) { return R.contrast(t.colour, '#ffffff') < 3; }).length;
+    note.textContent = list.length + ' colours from ' + label +
+      (weak ? '. ' + weak + ' of them are too light for the modules, so those chips set the background instead.' : '.');
+    safeSet(TOKENS_KEY, JSON.stringify(list));
+    applyTokens(list);
   }
 
   // ---- redirect page ------------------------------------------------------
@@ -1338,7 +1423,34 @@
 
   // Rather than write a PDF by hand, hand the browser a correctly-sized print
   // document: it renders the SVG as vector and "Save as PDF" is one dialog away.
+  // Four layouts rather than one grid, because a badge, a folded tent and a
+  // poster want different page sizes and different furniture. The browser
+  // renders the SVG as vector and its own dialog writes the PDF.
+  var PRINT_TEMPLATES = {
+    labels: {
+      page: 'A4', margin: '10mm', gap: '8mm', guides: true, caption: true,
+      note: 'Dashed lines are cut guides.'
+    },
+    badges: {
+      page: 'A4', margin: '8mm', gap: '4mm', guides: true, caption: true,
+      card: { w: 85, h: 54 },
+      note: 'Each card is 85 x 54 mm, the size of a business card.'
+    },
+    tent: {
+      page: 'A5 landscape', margin: '8mm', gap: '0', guides: false, caption: true,
+      tent: true, single: true,
+      note: 'Fold along the dotted line so it stands up. One per page.'
+    },
+    poster: {
+      page: 'A4', margin: '14mm', gap: '0', guides: false, caption: true,
+      single: true,
+      note: 'One per page, centred.'
+    }
+  };
+
   function openPrintSheet(items) {
+    var key = ($('#printtpl') && $('#printtpl').value) || 'labels';
+    var t = PRINT_TEMPLATES[key] || PRINT_TEMPLATES.labels;
     var mm = Math.min(400, Math.max(5, Number($('#printmm').value) || 40));
     var note = $('#printnote');
 
@@ -1350,31 +1462,72 @@
     }
     note.classList.remove('bad');
     note.textContent = items.length + ' code' + (items.length === 1 ? '' : 's') +
-      ' at ' + mm + ' mm opened in the print view.';
+      ' at ' + mm + ' mm, laid out as ' + $('#printtpl').selectedOptions[0].text.toLowerCase() + '.';
 
-    var cells = items.map(function (it) {
-      return '<figure style="width:' + mm + 'mm">' + it.svg +
-        (it.label ? '<figcaption>' + esc(it.label) + '</figcaption>' : '') + '</figure>';
-    }).join('');
+    var cell = function (it) {
+      var cap = t.caption && it.label
+        ? '<figcaption>' + esc(it.label) + '</figcaption>' : '';
+      if (t.card) {
+        // Code on the left, room for a name on the right.
+        return '<figure class="card"><span class="code" style="width:' + mm + 'mm">' + it.svg +
+          '</span><span class="meta">' + (it.label ? esc(it.label) : '') + '</span></figure>';
+      }
+      if (t.tent) {
+        // Upper half is upside down so it reads from the other side once folded.
+        return '<figure class="tent">' +
+          '<span class="half flip"><span style="width:' + mm + 'mm">' + it.svg + '</span>' +
+          (it.label ? '<em>' + esc(it.label) + '</em>' : '') + '</span>' +
+          '<span class="fold"></span>' +
+          '<span class="half"><span style="width:' + mm + 'mm">' + it.svg + '</span>' +
+          (it.label ? '<em>' + esc(it.label) + '</em>' : '') + '</span></figure>';
+      }
+      return '<figure style="width:' + mm + 'mm">' + it.svg + cap + '</figure>';
+    };
+
+    var css = [
+      '@page { size: ' + t.page + '; margin: ' + t.margin + ' }',
+      'body { margin:0; background:#fff; color:#000;',
+      '  font:500 8pt Inter,Helvetica,Arial,sans-serif }',
+      '.sheet { display:flex; flex-wrap:wrap; gap:' + t.gap + '; align-content:flex-start }',
+      'figure { margin:0; break-inside:avoid; page-break-inside:avoid; padding:2mm }',
+      t.guides ? 'figure { outline:0.2mm dashed #bbb; outline-offset:1mm }' : '',
+      'figure svg { display:block; width:100%; height:auto }',
+      'figcaption { margin-top:1.5mm; text-align:center; font-size:7pt; overflow-wrap:anywhere }',
+      '.note { font-size:8pt; color:#555; margin:0 0 5mm }',
+      '@media print { .note { display:none } }',
+      // badges
+      'figure.card { width:' + (t.card ? t.card.w : 85) + 'mm; height:' +
+        (t.card ? t.card.h : 54) + 'mm; display:flex; align-items:center; gap:4mm;',
+      '  padding:4mm; box-sizing:border-box }',
+      'figure.card .code { flex:none }',
+      'figure.card .meta { font-size:11pt; font-weight:600; overflow-wrap:anywhere }',
+      // table tent
+      '.sheet:has(.tent) { display:block }',
+      'figure.tent { width:100%; height:100%; display:flex; flex-direction:column;',
+      '  align-items:center; justify-content:space-between; padding:0 }',
+      'figure.tent .half { display:flex; flex-direction:column; align-items:center;',
+      '  gap:3mm; padding:6mm 0 }',
+      'figure.tent .flip { transform:rotate(180deg) }',
+      'figure.tent em { font-style:normal; font-size:10pt; font-weight:600 }',
+      'figure.tent .fold { display:block; width:100%; border-top:0.3mm dashed #999 }',
+      // poster
+      t.single && !t.tent ? '.sheet { justify-content:center; align-content:center; min-height:90vh }' : '',
+      t.single && !t.tent ? 'figure figcaption { font-size:14pt; margin-top:6mm }' : ''
+    ].filter(Boolean).join('\n');
+
+    var list = t.single ? items.slice(0, 1) : items;
+    if (t.single && items.length > 1) {
+      // One per page: repeat the figure with a break between.
+      list = items;
+      css += '\nfigure { page-break-after: always }';
+    }
 
     var doc = '<!doctype html><html><head><meta charset="utf-8">' +
-      '<title>Quiet Zone print sheet</title><style>' +
-      '@page { size: A4; margin: 10mm }' +
-      'body { margin: 0; font: 500 8pt Inter, Helvetica, Arial, sans-serif; color: #000;' +
-      '  background: #fff }' +
-      '.sheet { display: flex; flex-wrap: wrap; gap: 8mm; align-content: flex-start }' +
-      'figure { margin: 0; break-inside: avoid; page-break-inside: avoid;' +
-      '  padding: 2mm; outline: 0.2mm dashed #bbb; outline-offset: 1mm }' +
-      'figure svg { display: block; width: 100%; height: auto }' +
-      'figcaption { margin-top: 1.5mm; text-align: center; font-size: 7pt;' +
-      '  overflow-wrap: anywhere }' +
-      '.note { font-size: 8pt; color: #555; margin: 0 0 5mm }' +
-      '@media print { .note { display: none } }' +
-      '</style></head><body>' +
-      '<p class="note">' + items.length + ' code' + (items.length === 1 ? '' : 's') +
-      ' at ' + mm + ' mm. Dashed lines are cut guides. Print at 100% scale. ' +
-      'A "fit to page" setting changes the physical size, and the scanning distance with it.</p>' +
-      '<div class="sheet">' + cells + '</div></body></html>';
+      '<title>Quiet Zone print sheet</title><style>' + css + '</style></head><body>' +
+      '<p class="note">' + list.length + ' code' + (list.length === 1 ? '' : 's') +
+      ' at ' + mm + ' mm. ' + t.note + ' Print at 100% scale. A "fit to page" setting ' +
+      'changes the physical size, and the scanning distance with it.</p>' +
+      '<div class="sheet">' + list.map(cell).join('') + '</div></body></html>';
 
     win.document.write(doc);
     win.document.close();
@@ -1883,6 +2036,23 @@
     $('#redirdest').addEventListener('input', function (e) { state.redirectTo = e.target.value; });
     $('#redirsave').addEventListener('click', saveRedirect);
 
+    $('#tokensbtn').addEventListener('click', function () { $('#tokensfile').click(); });
+    $('#tokensfile').addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0];
+      if (!f) return;
+      var fr = new FileReader();
+      fr.onload = function () { loadTokens(fr.result, f.name); };
+      fr.readAsText(f);
+    });
+    $('#tokensclear').addEventListener('click', function () {
+      try { localStorage.removeItem(TOKENS_KEY); } catch (e) { /* private mode */ }
+      COLOUR_CHIPS = DEFAULT_CHIPS.slice();
+      renderColourChips();
+      $('#tokensclear').hidden = true;
+      $('#tokensnote').textContent = 'Back to the built-in colours.';
+      $('#tokensnote').classList.remove('bad');
+    });
+
     $('#uselogocolour').addEventListener('click', function () {
       if (!logoInfo) return;
       state.fg = logoInfo.colour;
@@ -2144,7 +2314,9 @@
 
   // ---- boot ---------------------------------------------------------------
 
+  var DEFAULT_CHIPS = COLOUR_CHIPS.slice();
   applyTheme(safeGet(THEME_KEY) || 'dark');
+  applyTokens(savedTokens());
   readHash();
   renderTypes();
   renderFields();
@@ -2154,6 +2326,12 @@
   bind();
   syncControls();
   setVerdict('#camverdict', '', 'Camera off', 'Press Start camera to test a printed code.');
+  // Registers only where the built page ships a worker; the dev pages have none
+  // and the rejection is ignored.
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    navigator.serviceWorker.register('./sw.js').catch(function () { /* not built */ });
+  }
+
   render();
   markHistory();                        // the starting point is undoable to
   if (!location.hash) $('#quick').focus();

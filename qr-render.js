@@ -530,9 +530,11 @@
     return { type: 'text', data: { text: v } };
   }
 
-  // JSON.stringify does not escape "</script>", which terminates the script
-  // element it sits in and turns the rest into markup. Escaping < > & as unicode
-  // keeps the string inert wherever it is embedded.
+  // JSON.stringify does not escape a closing script tag, and that tag ends the
+  // element it sits in, turning the rest into markup. Escaping < > & as unicode
+  // keeps the string inert wherever it is embedded. This comment cannot spell
+  // the tag out either: build.mjs refuses any source containing it, because an
+  // inlined bundle would break the built page while the dev page still worked.
   function jsString(v) {
     return JSON.stringify(String(v == null ? '' : v))
       .replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');

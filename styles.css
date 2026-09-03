@@ -886,3 +886,9 @@ input.swatch-val:focus { border-color: var(--foreground); color: var(--foregroun
 .logofound .btn { height: 30px; padding: 0 12px; font-size: 12.5px; margin-left: auto }
 .range.topgap { margin-top: 16px }
 .logofound .btn.risky { border-color: var(--warn-ink); color: var(--warn-ink) }
+
+/* ---- brand token import ------------------------------------------------- */
+.brandrow { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 16px }
+.brandrow .btn { height: 30px; padding: 0 12px; font-size: 12.5px }
+.brandrow .hint { flex: 1 1 220px; min-width: 0 }
+.chip-btn.weak { border-style: dashed }

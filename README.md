@@ -3,7 +3,8 @@
 A QR code generator that decodes its own output before handing it to you. If a
 code will not scan, you find out on the page.
 
-Runs locally. Nothing to install, no account, no network.
+Runs locally. Nothing to install, no account, no network. The built page is
+installable and works with no connection at all.
 
 ```
 npm start          # http://127.0.0.1:8777
@@ -39,6 +40,12 @@ disappear into the background. If matching would drop the code under the 3:1 a
 camera needs, it says so and the button changes to "Match anyway" rather than
 handing you a code that will not scan. A plate sits behind the mark for the case
 that needs one, and clear space around it is adjustable.
+
+**Import brand colours** reads a `tokens.json` and turns its colours into chips.
+It walks any JSON, so both `{ "value": "#ce0f2e" }` and a flat `{ name: "#ce0f2e" }`
+map work, and it checks each one: anything under 3:1 on white cannot carry the
+modules, so those chips set the background instead of handing you a dead code.
+Loading TechBBQ's own tokens flags Ignite and Spark, at 2.84:1 and 2.10:1.
 
 Every colour control names what it changes: modules are "the squares that carry
 the data", background is "behind the squares, including the quiet zone". Closed
@@ -88,7 +95,7 @@ browser and no video leaves the page.
 |---|---|
 | Copy PNG / Copy SVG | to the clipboard (`Enter` or `Cmd/Ctrl+C` copies the PNG) |
 | Save PNG / Save SVG | to a file (`Cmd/Ctrl+S` saves the PNG) |
-| Print sheet | N copies at an exact mm width on A4 with cut guides. "Save as PDF" in the print dialog gives a vector file. |
+| Print sheet | four layouts: label sheet on A4 with cut guides, 85 x 54 mm badges, an A5 table tent that folds in half, or one poster per page. "Save as PDF" in the print dialog gives a vector file. |
 | Download ZIP | every verified code from a batch run |
 | Copy link | a URL that restores the whole design, so you can bookmark a style or send it on |
 
