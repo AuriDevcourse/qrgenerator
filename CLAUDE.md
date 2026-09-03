@@ -36,8 +36,33 @@ Each came out of the decode suite, not documentation:
 - Keep modules at roughly **8px** when rasterising (`recommendedPx()`), or the
   decode check measures resolution instead of correctness.
 
+## Structure
+
+`app.js` is one IIFE in sections: payload definitions, state, persistence,
+share links, theme, form rendering, rasterising, the design render loop, readout,
+warnings, exports, print, batch, camera, tabs, wiring, boot.
+
+- **`state` holds everything**, and `syncControls()` pushes it back into the DOM.
+  Anything that changes state from outside a control (a preset, a shared link)
+  must call it rather than setting inputs by hand.
+- **`STYLE_KEYS` defines what a preset and a shared link carry** — the look, never
+  the payload and never an uploaded image (it would not fit in a URL). Add new
+  visual options to that list or they will not persist.
+- **No modal dialogs.** `alert`, `confirm` and `prompt` block the page and read as
+  unfinished; print options are inline inputs for that reason.
+- **The print sheet is a generated document, not a PDF writer.** The browser
+  renders the SVG as vector and its own dialog saves the PDF.
+
 ## Adding a payload type
 
 1. Add a builder to `payload` in `qr-render.js`.
 2. Add the type to `TYPES` and its fields to `FIELDS` in `app.js`.
 3. Add a case to `verify.html`.
+
+## Adding a visual option
+
+1. Add it to `opts()` and handle it in `qr-render.js`.
+2. Add its key to `STYLE_KEYS` so presets and links keep it.
+3. Handle it in `syncControls()`.
+4. **Add a decode case to `verify.html`** — anything that changes the pixels can
+   break scanning, and a gradient or frame that looks fine can still fail.

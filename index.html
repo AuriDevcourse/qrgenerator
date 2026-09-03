@@ -16,11 +16,13 @@
   <div class="orbs__orb orbs__orb--b"></div>
 </div>
 
+<a class="skip" href="#main">Skip to controls</a>
+
 <div class="wrap">
 
   <header class="top">
     <div class="brandline">
-      <svg viewBox="0 0 555.21 643.89" role="img" aria-label="TechBBQ">
+      <svg class="mark" viewBox="0 0 555.21 643.89" role="img" aria-label="TechBBQ">
         <defs>
           <linearGradient id="tbbq-mark" x1="0" y1="321.94" x2="555.21" y2="321.94" gradientUnits="userSpaceOnUse">
             <stop offset="0" stop-color="#f58022"/>
@@ -31,87 +33,147 @@
       </svg>
       <h1>Quiet Zone</h1>
       <span class="chip">ISO/IEC 18004</span>
+      <span class="grow"></span>
+      <button type="button" class="btn outline" id="share" title="Copy a link that restores this exact design">Copy link</button>
+      <button type="button" class="btn outline iconbtn" id="theme" aria-label="Switch to light theme" title="Switch theme">
+        <span id="theme-icon" aria-hidden="true">◐</span>
+      </button>
     </div>
     <p>A QR generator that reads its own output back with a decoder before handing it to you — so you find out here, not on a printed banner, whether the code actually scans.</p>
   </header>
 
-  <div class="board">
+  <nav class="tabs" role="tablist" aria-label="Workspace">
+    <button type="button" role="tab" id="tabbtn-design" data-tab="design" aria-selected="true" aria-controls="tab-design">Design</button>
+    <button type="button" role="tab" id="tabbtn-batch" data-tab="batch" aria-selected="false" aria-controls="tab-batch" tabindex="-1">Batch</button>
+    <button type="button" role="tab" id="tabbtn-test" data-tab="test" aria-selected="false" aria-controls="tab-test" tabindex="-1">Camera test</button>
+  </nav>
 
-    <div>
-      <section class="block">
-        <p class="eyebrow">What the code does</p>
-        <div class="types" id="types"></div>
-        <div class="fields" id="fields"></div>
-        <div class="rawbox">
-          <div class="field">
-            <label for="raw">Encoded payload</label>
-            <textarea id="raw" rows="2" readonly spellcheck="false"></textarea>
+  <main id="main">
+
+  <!-- ============================ DESIGN ============================ -->
+  <section id="tab-design" role="tabpanel" aria-labelledby="tabbtn-design">
+    <div class="board">
+
+      <div>
+        <section class="block">
+          <p class="eyebrow">Start from a preset</p>
+          <div class="types" id="presets"></div>
+          <div class="presetsave">
+            <input type="text" id="presetname" placeholder="Name this style" aria-label="Preset name" maxlength="40">
+            <button type="button" class="btn outline" id="presetadd">Save style</button>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="block">
-        <p class="eyebrow">Appearance</p>
-        <div class="ctrls">
-
-          <div class="field">
-            <label>Module shape</label>
-            <div class="seg" data-key="style">
-              <button type="button" data-val="square" aria-pressed="false">Square</button>
-              <button type="button" data-val="rounded" aria-pressed="true">Rounded</button>
-              <button type="button" data-val="dots" aria-pressed="false">Dots</button>
-            </div>
-            <span class="hint">Finder, timing and alignment patterns always stay square — decoders use them to lock onto the grid.</span>
-          </div>
-
-          <div class="field">
-            <label>Corner eyes</label>
-            <div class="seg" data-key="eyeStyle">
-              <button type="button" data-val="square" aria-pressed="false">Square</button>
-              <button type="button" data-val="rounded" aria-pressed="true">Rounded</button>
-              <button type="button" data-val="circle" aria-pressed="false">Circle</button>
+        <section class="block">
+          <p class="eyebrow">What the code does</p>
+          <div class="types" id="types"></div>
+          <div class="fields" id="fields"></div>
+          <div class="rawbox">
+            <div class="field">
+              <label for="raw">Encoded payload</label>
+              <textarea id="raw" rows="2" readonly spellcheck="false"></textarea>
             </div>
           </div>
+        </section>
 
-          <div class="field">
-            <label>Error correction</label>
-            <div class="seg ec" data-key="ec">
-              <button type="button" data-val="L" aria-pressed="false">L 7%</button>
-              <button type="button" data-val="M" aria-pressed="true">M 15%</button>
-              <button type="button" data-val="Q" aria-pressed="false">Q 25%</button>
-              <button type="button" data-val="H" aria-pressed="false">H 30%</button>
+        <section class="block">
+          <p class="eyebrow">Shape</p>
+          <div class="ctrls">
+            <div class="field">
+              <label id="lbl-style">Module shape</label>
+              <div class="seg" data-key="style" role="radiogroup" aria-labelledby="lbl-style">
+                <button type="button" data-val="square" aria-pressed="false">Square</button>
+                <button type="button" data-val="rounded" aria-pressed="true">Rounded</button>
+                <button type="button" data-val="dots" aria-pressed="false">Dots</button>
+              </div>
+              <span class="hint">Finder, timing and alignment patterns always stay square — decoders use them to lock onto the grid.</span>
             </div>
-            <span class="hint">How much of the code can be smudged, torn or covered and still read.</span>
-          </div>
 
-          <div class="field">
-            <label>Colours</label>
-            <div class="swatches">
-              <span class="swatch"><input type="color" id="fg" value="#ce0f2e" aria-label="Module colour"></span>
-              <span class="swatch-val" id="fg-val">#ce0f2e</span>
-              <span class="swatch"><input type="color" id="bg" value="#ffffff" aria-label="Background colour"></span>
-              <span class="swatch-val" id="bg-val">#ffffff</span>
+            <div class="field">
+              <label id="lbl-eyes">Corner eyes</label>
+              <div class="seg" data-key="eyeStyle" role="radiogroup" aria-labelledby="lbl-eyes">
+                <button type="button" data-val="square" aria-pressed="false">Square</button>
+                <button type="button" data-val="rounded" aria-pressed="true">Rounded</button>
+                <button type="button" data-val="circle" aria-pressed="false">Circle</button>
+              </div>
             </div>
-            <span class="hint">Defaults to founder red on white. Dark modules on a light ground is the orientation every scanner expects.</span>
-          </div>
 
-          <div class="field range">
-            <div class="row"><label for="margin">Quiet zone</label><output id="margin-val">4</output></div>
-            <input type="range" id="margin" min="0" max="8" step="1" value="4">
-            <span class="hint">Clear border in modules. The spec asks for 4.</span>
-          </div>
+            <div class="field">
+              <label id="lbl-ec">Error correction</label>
+              <div class="seg ec" data-key="ec" role="radiogroup" aria-labelledby="lbl-ec">
+                <button type="button" data-val="L" aria-pressed="false">L 7%</button>
+                <button type="button" data-val="M" aria-pressed="true">M 15%</button>
+                <button type="button" data-val="Q" aria-pressed="false">Q 25%</button>
+                <button type="button" data-val="H" aria-pressed="false">H 30%</button>
+              </div>
+              <span class="hint">How much of the code can be smudged, torn or covered and still read.</span>
+            </div>
 
-          <div class="field" style="grid-column:1/-1">
-            <label>Centre mark</label>
-            <div class="seg" data-key="logoMode">
+            <div class="field range">
+              <div class="row"><label for="margin">Quiet zone</label><output id="margin-val">4</output></div>
+              <input type="range" id="margin" min="0" max="8" step="1" value="4">
+              <span class="hint">Clear border in modules. The spec asks for 4.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="block">
+          <p class="eyebrow">Colour</p>
+          <div class="ctrls">
+            <div class="field">
+              <label>Modules and background</label>
+              <div class="swatches">
+                <span class="swatch"><input type="color" id="fg" value="#ce0f2e" aria-label="Module colour"></span>
+                <span class="swatch-val" id="fg-val">#ce0f2e</span>
+                <span class="swatch"><input type="color" id="bg" value="#ffffff" aria-label="Background colour"></span>
+                <span class="swatch-val" id="bg-val">#ffffff</span>
+              </div>
+              <span class="hint">Dark modules on a light ground is the orientation every scanner expects.</span>
+            </div>
+
+            <div class="field">
+              <label class="check"><input type="checkbox" id="gradon"> Gradient fill</label>
+              <div id="gradopts" hidden>
+                <div class="swatches">
+                  <span class="swatch"><input type="color" id="gradfrom" value="#fa7000" aria-label="Gradient start"></span>
+                  <span class="swatch-val" id="gradfrom-val">#fa7000</span>
+                  <span class="swatch"><input type="color" id="gradto" value="#ce0f2e" aria-label="Gradient end"></span>
+                  <span class="swatch-val" id="gradto-val">#ce0f2e</span>
+                </div>
+                <div class="range" style="margin-top:10px">
+                  <div class="row"><label for="gradangle">Angle</label><output id="gradangle-val">120&deg;</output></div>
+                  <input type="range" id="gradangle" min="0" max="359" step="5" value="120">
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="check"><input type="checkbox" id="eyeon"> Separate eye colour</label>
+              <div id="eyeopts" hidden>
+                <div class="swatches">
+                  <span class="swatch"><input type="color" id="eyecolor" value="#0d0d0d" aria-label="Eye colour"></span>
+                  <span class="swatch-val" id="eyecolor-val">#0d0d0d</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="block">
+          <p class="eyebrow">Centre mark</p>
+          <div class="field">
+            <div class="seg" data-key="logoMode" role="radiogroup" aria-label="Centre mark source">
               <button type="button" data-val="none" aria-pressed="true">None</button>
-              <button type="button" data-val="mark">TechBBQ mark</button>
-              <button type="button" data-val="custom">Upload</button>
+              <button type="button" data-val="mark" aria-pressed="false">TechBBQ mark</button>
+              <button type="button" data-val="custom" aria-pressed="false">Upload</button>
             </div>
             <div class="logo-opts" id="logo-opts" hidden>
               <div class="types small" id="markvars"></div>
-              <div class="filerow" id="uploadrow" hidden>
-                <input type="file" id="logofile" accept="image/*">
+              <div id="uploadrow" hidden>
+                <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose or drop an image">
+                  <span id="dropmsg">Drop an image here, or click to choose</span>
+                  <input type="file" id="logofile" accept="image/*" hidden>
+                </div>
               </div>
               <div class="range">
                 <div class="row"><label for="logopct">Mark size</label><output id="logopct-val">20%</output></div>
@@ -120,63 +182,153 @@
               </div>
             </div>
           </div>
+        </section>
 
-        </div>
-      </section>
-    </div>
-
-    <div class="panel">
-
-      <div class="card stage">
-        <img id="preview" alt="" width="260" height="260">
-        <div class="verdict" id="verdict"></div>
+        <section class="block">
+          <p class="eyebrow">Frame</p>
+          <div class="field">
+            <label class="check"><input type="checkbox" id="frameon"> Add a caption frame</label>
+            <div class="ctrls" id="frameopts" hidden style="margin-top:12px">
+              <div class="field">
+                <label for="frametext">Caption</label>
+                <input type="text" id="frametext" value="SCAN ME" maxlength="40">
+              </div>
+              <div class="field">
+                <label>Frame and text colour</label>
+                <div class="swatches">
+                  <span class="swatch"><input type="color" id="framefill" value="#ce0f2e" aria-label="Frame colour"></span>
+                  <span class="swatch-val" id="framefill-val">#ce0f2e</span>
+                  <span class="swatch"><input type="color" id="frametextcolor" value="#ffffff" aria-label="Caption colour"></span>
+                  <span class="swatch-val" id="frametextcolor-val">#ffffff</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <div class="notices" id="notices"></div>
-
-      <div class="card spec">
-        <p class="eyebrow">Readout</p>
-        <dl>
-          <dt>Symbol</dt><dd id="s-version">&mdash;</dd>
-          <dt>Module grid</dt><dd id="s-modules">&mdash;</dd>
-          <dt>Quiet zone</dt><dd id="s-quiet">&mdash;</dd>
-          <dt>Smallest usable print</dt><dd id="s-print">&mdash;</dd>
-          <dt>Scans from</dt><dd id="s-reach">&mdash;</dd>
-        </dl>
-        <div class="cap" id="cap" data-level="ok">
-          <div class="track"><div class="fill" id="cap-fill" style="width:0%"></div></div>
-          <div class="lab"><span id="cap-lab-a">&mdash;</span><span id="cap-lab-b">&mdash;</span></div>
+      <div class="panel">
+        <div class="card stage">
+          <img id="preview" alt="">
+          <div class="verdict" id="verdict" role="status" aria-live="polite"></div>
         </div>
-        <div class="distrow">
-          <label for="distance">To be scanned from
-            <input type="number" id="distance" value="30" min="1" max="2000" step="5"> cm</label>
-          <span id="s-need">&mdash;</span>
-        </div>
-      </div>
 
-      <div class="exports">
-        <button type="button" class="btn primary" id="copy-png">Copy PNG</button>
-        <button type="button" class="btn outline" id="copy-svg">Copy SVG</button>
-        <span id="downloads" style="display:flex;gap:8px;flex:1 1 auto">
+        <div class="notices" id="notices"></div>
+
+        <div class="card spec">
+          <p class="eyebrow">Readout</p>
+          <dl>
+            <dt>Symbol</dt><dd id="s-version">&mdash;</dd>
+            <dt>Module grid</dt><dd id="s-modules">&mdash;</dd>
+            <dt>Quiet zone</dt><dd id="s-quiet">&mdash;</dd>
+            <dt>Smallest usable print</dt><dd id="s-print">&mdash;</dd>
+            <dt>Scans from</dt><dd id="s-reach">&mdash;</dd>
+          </dl>
+          <div class="cap" id="cap" data-level="ok">
+            <div class="track"><div class="fill" id="cap-fill" style="width:0%"></div></div>
+            <div class="lab"><span id="cap-lab-a">&mdash;</span><span id="cap-lab-b">&mdash;</span></div>
+          </div>
+          <div class="distrow">
+            <label for="distance">To be scanned from
+              <input type="number" id="distance" value="30" min="1" max="2000" step="5"> cm</label>
+            <span id="s-need">&mdash;</span>
+          </div>
+        </div>
+
+        <div class="exports">
+          <button type="button" class="btn primary" id="copy-png">Copy PNG</button>
+          <button type="button" class="btn outline" id="copy-svg">Copy SVG</button>
           <button type="button" class="btn outline" id="dl-png">Save PNG</button>
           <button type="button" class="btn outline" id="dl-svg">Save SVG</button>
-        </span>
-      </div>
+        </div>
 
+        <div class="card">
+          <p class="eyebrow">Print sheet</p>
+          <div class="printrow">
+            <label for="printmm">Each code<input type="number" id="printmm" value="40" min="5" max="400" step="1"> mm wide</label>
+            <label for="printcount">Copies<input type="number" id="printcount" value="12" min="1" max="200" step="1"></label>
+          </div>
+          <button type="button" class="btn outline wide" id="print-one">Open print view</button>
+          <p class="hint" id="printnote">Lays the codes out on A4 with cut guides. Choose &ldquo;Save as PDF&rdquo; in the print dialog for a vector file.</p>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
+
+  <!-- ============================ BATCH ============================ -->
+  <section id="tab-batch" role="tabpanel" aria-labelledby="tabbtn-batch" hidden>
+    <div class="board">
+      <div>
+        <section class="block">
+          <p class="eyebrow">One code per line</p>
+          <div class="field">
+            <label for="batchin">Paste a list, or drop a CSV</label>
+            <textarea id="batchin" rows="10" spellcheck="false" placeholder="techbbq.org/a/auri, Auri Baciauskas
+techbbq.org/a/soren, S&oslash;ren &Aring;
+techbbq.org/a/bob, Bob"></textarea>
+            <span class="hint">Each line is <code>value</code> or <code>value, label</code>. A dropped CSV uses its first column as the value and its second as the label; a header row is detected and skipped.</span>
+          </div>
+          <div class="dropzone" id="csvdrop" tabindex="0" role="button" aria-label="Choose or drop a CSV file">
+            <span id="csvmsg">Drop a .csv here, or click to choose</span>
+            <input type="file" id="csvfile" accept=".csv,text/csv" hidden>
+          </div>
+          <div class="batchbar">
+            <button type="button" class="btn primary" id="batchrun">Generate &amp; verify</button>
+            <button type="button" class="btn outline" id="batchzip" disabled>Download ZIP</button>
+            <button type="button" class="btn outline" id="batchprint" disabled>Print sheet</button>
+          </div>
+          <p class="hint">Every code uses the style set on the Design tab, and each one is decoded before it is offered to you.</p>
+        </section>
+      </div>
+      <div class="panel">
+        <div class="card">
+          <p class="eyebrow">Results</p>
+          <div id="batchsummary" class="batchsummary">Nothing generated yet.</div>
+          <div id="batchgrid" class="batchgrid"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================== CAMERA TEST ========================== -->
+  <section id="tab-test" role="tabpanel" aria-labelledby="tabbtn-test" hidden>
+    <div class="board">
+      <div>
+        <section class="block">
+          <p class="eyebrow">Test the real thing</p>
+          <p class="lede">The scan check on the Design tab proves the image decodes. This proves the <em>printed</em> code decodes — hold a print, a screen or a badge up to the camera and see exactly what a scanner reads.</p>
+          <div class="batchbar">
+            <button type="button" class="btn primary" id="camstart">Start camera</button>
+            <button type="button" class="btn outline" id="camstop" disabled>Stop</button>
+          </div>
+          <p class="hint">The video never leaves this page — decoding happens in your browser. Camera access needs <code>localhost</code> or HTTPS.</p>
+        </section>
+      </div>
+      <div class="panel">
+        <div class="card stage">
+          <div class="videowrap">
+            <video id="cam" playsinline muted></video>
+            <div class="camidle" id="camidle">Camera off</div>
+          </div>
+          <div class="verdict" id="camverdict" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </main>
 
   <footer class="foot">
     Styled on the TechBBQ design system — Onest and Inter, founder red <code>#CE0F2E</code>,
-    the warm brand gradient on the capacity meter. Encoding by <code>qrcode-generator</code> (MIT);
-    every code here is rasterised and re-decoded with <code>jsQR</code> before the verdict is shown.
-    SVG output is vector — use it for anything going to print.
+    the warm brand gradient. Encoding by <code>qrcode-generator</code> (MIT), decoding by
+    <code>jsQR</code> (Apache-2.0), both vendored. SVG output is vector — use it for print.
   </footer>
 
 </div>
 
 <script src="./vendor/qrcode.js"></script>
 <script src="./qr-render.js"></script>
+<script src="./zip.js"></script>
 <script src="./vendor/jsqr.js"></script>
 <script src="./app.js"></script>
 </body>

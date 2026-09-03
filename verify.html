@@ -21,18 +21,20 @@
 <script>
 // Rasterise the generated SVG and read it back with an independent decoder (jsQR).
 // This is the only test that actually proves a code is scannable.
-function rasterize(svgStr, px) {
+// A caption frame makes the output taller than wide, so width and height are
+// tracked separately rather than assuming a square.
+function rasterize(svgStr, w, h) {
   return new Promise(function (res, rej) {
     var img = new Image();
     var url = URL.createObjectURL(new Blob([svgStr], { type: 'image/svg+xml' }));
     img.onload = function () {
       var cv = document.createElement('canvas');
-      cv.width = cv.height = px;
+      cv.width = w; cv.height = h;
       var ctx = cv.getContext('2d');
-      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, px, px);
-      ctx.drawImage(img, 0, 0, px, px);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
       URL.revokeObjectURL(url);
-      res(ctx.getImageData(0, 0, px, px));
+      res(ctx.getImageData(0, 0, w, h));
     };
     img.onerror = function () { rej(new Error('svg failed to load')); };
     img.src = url;
@@ -87,6 +89,23 @@ CASES.push({ name: 'calendar event', text: P.event({ title: 'TechBBQ 2026', loca
 CASES.push({ name: 'danish URL -> %-encoded', text: P.url({ url: 'techbbq.org/køb-billet' }), ec: 'M' });
 CASES.push({ name: 'raw non-ASCII text', text: 'Hej æøå — København', ec: 'M', xfail: 'no ECI header' });
 
+// gradient module fills
+CASES.push({ name: 'brand gradient modules', text: 'https://techbbq.org/tickets', ec: 'M',
+  style: 'rounded', eyeStyle: 'rounded', fgGradient: { from: '#fa7000', to: '#ce0f2e', angle: 120 } });
+CASES.push({ name: 'gradient + dark eyes', text: 'https://techbbq.org/tickets', ec: 'M',
+  style: 'dots', eyeStyle: 'rounded', fgGradient: { from: '#fa7000', to: '#ce0f2e' }, eyeColor: '#0d0d0d' });
+CASES.push({ name: 'pale gradient (low contrast)', text: 'https://techbbq.org/tickets', ec: 'M',
+  fgGradient: { from: '#fd9d04', to: '#fa7000' }, risky: true });
+
+// caption frames — output is taller than wide
+CASES.push({ name: 'frame: SCAN ME', text: 'https://techbbq.org/tickets', ec: 'M',
+  style: 'rounded', eyeStyle: 'rounded', frame: { text: 'SCAN ME', fill: '#ce0f2e', textColor: '#ffffff' } });
+CASES.push({ name: 'frame + gradient + mark', text: 'https://techbbq.org/tickets', ec: 'H',
+  style: 'rounded', eyeStyle: 'rounded', logoMark: 'tbbq-white', logoPct: 0.2,
+  fgGradient: { from: '#fa7000', to: '#ce0f2e' }, frame: { text: 'GET TICKETS', fill: '#0d0d0d', textColor: '#f2f2f2' } });
+CASES.push({ name: 'frame, long caption', text: 'https://techbbq.org/tickets', ec: 'M',
+  frame: { text: 'SCAN FOR THE FULL PROGRAMME', fill: '#ce0f2e', textColor: '#ffffff' } });
+
 // capacity
 CASES.push({ name: '1200 chars @ EC L', text: 'A'.repeat(1200), ec: 'L' });
 CASES.push({ name: 'max-ish 2900 @ EC L', text: 'A'.repeat(2900), ec: 'L' });
@@ -105,7 +124,8 @@ CASES.push({ name: 'max-ish 2900 @ EC L', text: 'A'.repeat(2900), ec: 'L' });
       try {
         var svg = QRRender.svg(c.text, Object.assign({}, c, { px: px }));
         card.innerHTML = QRRender.svg(c.text, Object.assign({}, c, { px: 156 }));
-        var got = jsQR((await rasterize(svg, px)).data, px, px);
+        var ph = Math.round(px * QRRender.dimensions(c.text, c).ratio);
+        var got = jsQR((await rasterize(svg, px, ph)).data, px, ph);
         var ok = !!got && got.data === c.text;
         if (ok) { pass++; cls = 'pass'; label = 'PASS'; }
         else if (c.xfail) { xfail++; cls = 'xfail'; label = 'XFAIL (' + c.xfail + ')'; }

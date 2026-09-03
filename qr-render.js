@@ -249,36 +249,120 @@
 
   // ---- SVG ----------------------------------------------------------------
 
+  // Gradient direction in CSS terms: 0deg points up, 90deg right, 120deg is the
+  // TechBBQ diagonal. Converted to objectBoundingBox coordinates.
+  function gradientVector(angle) {
+    var a = ((angle == null ? 120 : angle) - 90) * Math.PI / 180;
+    var dx = Math.cos(a) / 2, dy = Math.sin(a) / 2;
+    return { x1: n(0.5 - dx), y1: n(0.5 - dy), x2: n(0.5 + dx), y2: n(0.5 + dy) };
+  }
+
+  function gradientDef(id, grad) {
+    var v = gradientVector(grad.angle);
+    return '<linearGradient id="' + id + '" x1="' + v.x1 + '" y1="' + v.y1 +
+      '" x2="' + v.x2 + '" y2="' + v.y2 + '">' +
+      '<stop offset="0" stop-color="' + grad.from + '"/>' +
+      '<stop offset="1" stop-color="' + grad.to + '"/></linearGradient>';
+  }
+
+  var FRAME = { pad: 1.6, band: 6, radius: 2.4 };
+
+  /**
+   * Outer dimensions in module units. A caption frame makes the output taller
+   * than it is wide, so callers must not assume a square.
+   */
+  function dimensions(text, opts) {
+    opts = opts || {};
+    var margin = opts.margin == null ? 4 : opts.margin;
+    var m = encode(text, opts.ec || 'M', opts.minVersion);
+    var q = m.size + margin * 2;
+    if (!opts.frame) return { vbW: q, vbH: q, qx: 0, qy: 0, ratio: 1 };
+    return {
+      vbW: q + FRAME.pad * 2,
+      vbH: q + FRAME.pad + FRAME.band,
+      qx: FRAME.pad,
+      qy: FRAME.pad,
+      ratio: (q + FRAME.pad + FRAME.band) / (q + FRAME.pad * 2)
+    };
+  }
+
   function svg(text, opts) {
     opts = opts || {};
     var ec = opts.ec || 'M';
     var margin = opts.margin == null ? 4 : opts.margin;
-    var px = opts.px || 1024;
+    var w = opts.px || 1024;
     var fg = opts.fg || '#000000';
     var bg = opts.bg || '#ffffff';
     var m = encode(text, ec, opts.minVersion);
     var p = paths(m, opts);
-    var vb = p.size;
+    var dim = dimensions(text, opts);
+    var h = Math.round(w * dim.ratio);
+    var uid = ++markUid;
 
-    var out = '<svg xmlns="http://www.w3.org/2000/svg" width="' + px + '" height="' + px +
-      '" viewBox="0 0 ' + vb + ' ' + vb + '" shape-rendering="geometricPrecision">';
-    if (bg !== 'transparent') {
-      out += '<rect width="' + vb + '" height="' + vb + '" fill="' + bg + '"/>';
+    var defs = '';
+    var fillFor = function (colour, grad, id) {
+      if (!grad) return colour;
+      defs += gradientDef(id, grad);
+      return 'url(#' + id + ')';
+    };
+    var dataFill = fillFor(fg, opts.fgGradient, 'qr-g-' + uid);
+    var eyeFill = fillFor(opts.eyeColor || fg,
+      opts.eyeGradient || (opts.eyeColor ? null : opts.fgGradient), 'qr-e-' + uid);
+
+    var out = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h +
+      '" viewBox="0 0 ' + n(dim.vbW) + ' ' + n(dim.vbH) +
+      '" shape-rendering="geometricPrecision">';
+
+    // Frame card sits behind everything; the code keeps its own background.
+    if (opts.frame) {
+      var f = opts.frame;
+      out += '<rect width="' + n(dim.vbW) + '" height="' + n(dim.vbH) +
+        '" rx="' + n(FRAME.radius) + '" fill="' + (f.fill || '#000000') + '"/>';
     }
-    if (p.data) out += '<path d="' + p.data + '" fill="' + fg + '"/>';
-    if (p.eyes) out += '<path fill-rule="evenodd" d="' + p.eyes + '" fill="' + (opts.eyeColor || fg) + '"/>';
+
+    if (bg !== 'transparent') {
+      out += '<rect x="' + n(dim.qx) + '" y="' + n(dim.qy) + '" width="' + n(dim.vbW - dim.qx * 2) +
+        '" height="' + n(dim.vbW - dim.qx * 2) + '"' +
+        (opts.frame ? ' rx="' + n(FRAME.radius * 0.55) + '"' : '') +
+        ' fill="' + bg + '"/>';
+    }
+
+    var body = '';
+    if (p.data) body += '<path d="' + p.data + '" fill="' + dataFill + '"/>';
+    if (p.eyes) body += '<path fill-rule="evenodd" d="' + p.eyes + '" fill="' + eyeFill + '"/>';
     if (opts.logoPct) {
-      var w = logoWindow(m.size, opts.logoPct);
+      var win = logoWindow(m.size, opts.logoPct);
       if (opts.logoMark && MARKS[opts.logoMark]) {
-        out += markMarkup(MARKS[opts.logoMark], w, margin);
+        body += markMarkup(MARKS[opts.logoMark], win, margin);
       } else if (opts.logoHref) {
-        var span = w.c1 - w.c0 + 1;
-        var pad = 0.5;
-        out += '<image href="' + opts.logoHref + '" x="' + n(w.c0 + margin + pad) +
-          '" y="' + n(w.r0 + margin + pad) + '" width="' + n(span - pad * 2) +
-          '" height="' + n(span - pad * 2) + '" preserveAspectRatio="xMidYMid meet"/>';
+        var span = win.c1 - win.c0 + 1;
+        var lp = 0.5;
+        body += '<image href="' + opts.logoHref + '" x="' + n(win.c0 + margin + lp) +
+          '" y="' + n(win.r0 + margin + lp) + '" width="' + n(span - lp * 2) +
+          '" height="' + n(span - lp * 2) + '" preserveAspectRatio="xMidYMid meet"/>';
       }
     }
+
+    if (dim.qx || dim.qy) {
+      body = '<g transform="translate(' + n(dim.qx) + ' ' + n(dim.qy) + ')">' + body + '</g>';
+    }
+
+    if (defs) out += '<defs>' + defs + '</defs>';
+    out += body;
+
+    // Caption. Rendered with a generic family on purpose: an SVG rasterised
+    // through an <img> is isolated and cannot load a webfont.
+    if (opts.frame && opts.frame.text) {
+      var cy = dim.vbH - FRAME.band / 2 + 0.15;
+      var fs = Math.min(FRAME.band * 0.62, dim.vbW / (opts.frame.text.length * 0.72 + 1));
+      out += '<text x="' + n(dim.vbW / 2) + '" y="' + n(cy) +
+        '" text-anchor="middle" dominant-baseline="middle"' +
+        ' font-family="Inter, Helvetica, Arial, sans-serif" font-weight="700"' +
+        ' font-size="' + n(fs) + '" letter-spacing="' + n(fs * 0.08) + '"' +
+        ' fill="' + (opts.frame.textColor || '#ffffff') + '">' +
+        String(opts.frame.text).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</text>';
+    }
+
     return out + '</svg>';
   }
 
@@ -361,6 +445,13 @@
     return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
   }
 
+  // A gradient fill is only as scannable as its weakest stop, so report that one.
+  function worstContrast(fg, bg, grad) {
+    if (!grad) return { ratio: contrast(fg, bg), colour: fg };
+    var a = contrast(grad.from, bg), b = contrast(grad.to, bg);
+    return a <= b ? { ratio: a, colour: grad.from } : { ratio: b, colour: grad.to };
+  }
+
   // Smallest raster width that keeps each module at `perModule` px — below
   // roughly 4px/module, cameras and decoders start to struggle.
   function recommendedPx(text, opts) {
@@ -374,12 +465,14 @@
     MAX_BYTES: MAX_BYTES,
     MARKS: MARKS,
     recommendedPx: recommendedPx,
+    dimensions: dimensions,
     utf8len: utf8len,
     encode: encode,
     paths: paths,
     svg: svg,
     payload: payload,
     contrast: contrast,
+    worstContrast: worstContrast,
     hasNonAscii: hasNonAscii,
     logoWindow: logoWindow
   };

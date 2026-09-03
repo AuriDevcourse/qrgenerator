@@ -24,6 +24,38 @@ the type falls back to the system sans stack. Encoder and decoder are vendored.
 
 ---
 
+## What it does
+
+Three tabs:
+
+**Design** — nine payload types (link, text, Wi-Fi, contact, email, SMS, phone,
+location, calendar event). Module shape, corner-eye shape, error correction, quiet
+zone, flat or gradient fill, a separate eye colour, a centre mark, and a caption
+frame. Five brand presets to start from, plus your own saved styles. Every change
+is re-decoded and the verdict shown before you export.
+
+**Batch** — paste a list or drop a CSV, get one verified code per row, download
+them all as a ZIP, or lay them out on a print sheet. Uses whatever style the Design
+tab is set to.
+
+**Camera test** — the Design tab proves the *image* decodes. This proves the
+*printed* code decodes: hold a print, screen or badge to the camera and see exactly
+what a scanner reads. Frames are decoded in the browser; no video leaves the page.
+
+### Getting work out
+
+| | |
+|---|---|
+| Copy PNG / Copy SVG | to the clipboard (`Cmd/Ctrl+C` copies the PNG) |
+| Save PNG / Save SVG | to a file (`Cmd/Ctrl+S` saves the PNG) |
+| Print sheet | N copies at an exact mm width on A4 with cut guides — "Save as PDF" in the print dialog gives a vector file |
+| Download ZIP | every verified code from a batch run |
+| Copy link | a URL that restores the whole design, so a style can be bookmarked or sent to someone |
+
+Saved styles and the theme choice live in `localStorage` — per browser, never sent
+anywhere. A shared link carries the design and the payload, but never an uploaded
+image.
+
 ## What a QR generator actually needs
 
 Five layers. Only the first is a solved problem you should not write yourself.
@@ -82,6 +114,10 @@ Every one of these came out of `verify.html` / `probe.html`, not from documentat
 - **Logos work by sacrifice.** A centre logo blanks real modules; error correction
   H (30%) rebuilds them. At 30% width with EC-L the code dies — that case is in the
   test suite as an *expected* failure.
+- **A gradient is only as scannable as its weakest stop.** The brand orange
+  `#fa7000` is 2.84:1 on white — under the 3:1 floor — while `#ce0f2e` is 5.63:1.
+  The contrast check reports the worse of the two stops and names it, instead of
+  averaging them into a passing number.
 
 ## Sizing for print
 
@@ -132,7 +168,8 @@ Light-on-dark is available but the app flags it.
 | `app.js` · `index.html` · `styles.css` | the web app |
 | `verify.html` | 30-case suite: renders, rasterises, re-decodes, reports |
 | `probe.html` | geometry sweeps — how the numbers above were found |
-| `batch.mjs` | CSV → one SVG per row |
+| `batch.mjs` | CSV → one SVG per row, from the command line |
+| `zip.js` | store-only ZIP writer for the in-browser batch export |
 | `build.mjs` | bundles everything into one standalone `dist/quiet-zone.html` |
 | `serve.mjs` | zero-dependency static server for local use |
 | `vendor/qrcode.js` | the encoder (MIT, Kazuhiko Arase) |
