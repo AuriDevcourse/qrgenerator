@@ -117,6 +117,22 @@ back. `verify.html` and the code comments keep the spec terms; the UI does not.
 One accuracy note: the capacity label says **bytes**, not characters. Danish
 `æ` costs two, so "characters" would be wrong.
 
+## Undo history
+
+Snapshots hold the payload and the look, pushed from `render()` behind a 400 ms
+debounce so a slider drag settles into one entry. `restore()` sets `past.muted`
+so replaying a snapshot does not record itself.
+
+- **An uploaded image is deliberately not in a snapshot.** A base64 data URI in
+  sixty entries costs megabytes, so undo restores the design around an upload,
+  not the upload.
+- **Snapshots go back through `sanitizeStyle()`/`sanitizeData()`.** They are the
+  same shape as a shared link and get the same gate.
+- **`Cmd+Z` inside a text field belongs to the browser.** `inTextField()` bails
+  so typing undo still works. Both global key handlers use `inTextField()` /
+  `inFocusable()`, which check that `closest` exists first: a key event
+  dispatched at the document has no `closest` and threw before that guard.
+
 ## Expiry is honest, keep it that way
 
 A static QR code cannot expire, and the UI says so in the group itself. The date

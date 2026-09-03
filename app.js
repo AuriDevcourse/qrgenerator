@@ -639,6 +639,93 @@
     });
   }
 
+  // ---- undo and redo ------------------------------------------------------
+  //
+  // Snapshots hold the payload and the look. An uploaded image is left out on
+  // purpose: a base64 data URI in every entry would cost megabytes, so undo
+  // restores the design around an upload rather than the upload itself.
+
+  // e.target is not always an Element: a key event dispatched at the document
+  // has no closest(), which would throw inside a handler and kill it.
+  function inTextField(target) {
+    if (!target || typeof target.closest !== 'function') return false;
+    return !!target.closest('input:not([type="color"]):not([type="range"]), textarea');
+  }
+
+  function inFocusable(target) {
+    if (!target || typeof target.closest !== 'function') return false;
+    return !!target.closest('input, textarea, select, button, a, summary, [role="button"], [contenteditable]');
+  }
+
+  var past = { stack: [], at: -1, muted: false, timer: 0 };
+  var HISTORY_MAX = 60;
+
+  function snapshot() {
+    return JSON.stringify({
+      t: state.type,
+      d: state.data,
+      s: styleOf(state),
+      e: state.expiry,
+      l: state.expiryInLink
+    });
+  }
+
+  function markHistory() {
+    var snap = snapshot();
+    if (past.stack[past.at] === snap) return;
+    past.stack = past.stack.slice(0, past.at + 1);
+    past.stack.push(snap);
+    if (past.stack.length > HISTORY_MAX) past.stack.shift();
+    past.at = past.stack.length - 1;
+    paintHistory();
+  }
+
+  // Called from render(), so a slider drag settles into one entry.
+  function noteChange() {
+    if (past.muted) return;
+    clearTimeout(past.timer);
+    past.timer = setTimeout(markHistory, 400);
+  }
+
+  function paintHistory() {
+    $('#undo').disabled = past.at <= 0;
+    $('#redo').disabled = past.at >= past.stack.length - 1;
+  }
+
+  function restore(snap) {
+    var o;
+    try { o = JSON.parse(snap); } catch (e) { return; }
+    past.muted = true;
+    if (FIELDS[o.t]) state.type = o.t;
+    var data = sanitizeData(o.d);
+    Object.keys(state.data).forEach(function (k) {
+      if (data[k] !== undefined) state.data[k] = data[k];
+    });
+    var style = sanitizeStyle(o.s, state);
+    STYLE_KEYS.forEach(function (k) {
+      if (style[k] !== undefined) state[k] = style[k];
+    });
+    state.expiry = /^\d{4}-\d{2}-\d{2}$/.test(o.e) ? o.e : '';
+    state.expiryInLink = o.l === true;
+    renderTypes(); renderFields(); syncControls(); render();
+    past.muted = false;
+    paintHistory();
+  }
+
+  function undo() {
+    clearTimeout(past.timer);
+    markHistory();                      // capture anything still pending
+    if (past.at <= 0) return;
+    past.at--;
+    restore(past.stack[past.at]);
+  }
+
+  function redo() {
+    if (past.at >= past.stack.length - 1) return;
+    past.at++;
+    restore(past.stack[past.at]);
+  }
+
   // ---- design tab render --------------------------------------------------
 
   var token = 0;
@@ -652,6 +739,7 @@
     var my = ++token;
     clearTimeout(recentTimer);
     recentTimer = setTimeout(pushRecent, 2500);
+    noteChange();
     var bytes = R.utf8len(text);
     var max = R.MAX_BYTES[state.ec];
 
@@ -1405,6 +1493,19 @@
         .catch(function () { flash('#share', 'Link is in the address bar'); });
     });
 
+    $('#undo').addEventListener('click', undo);
+    $('#redo').addEventListener('click', redo);
+
+    document.addEventListener('keydown', function (e) {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      var k = e.key.toLowerCase();
+      if (k !== 'z' && k !== 'y') return;
+      // Inside a text field, Cmd+Z belongs to the browser: it undoes typing.
+      if (inTextField(e.target)) return;
+      e.preventDefault();
+      if (k === 'y' || e.shiftKey) redo(); else undo();
+    });
+
     $('#reset').addEventListener('click', function () {
       // Keeps the theme and saved styles; clears the design, the payload and
       // any restored link.
@@ -1483,7 +1584,7 @@
     document.addEventListener('keydown', function (e) {
       // Never steal keys from something focusable. Enter on a focused button
       // must press that button rather than copy the code.
-      if (e.target.closest('input, textarea, select, button, a, summary, [role="button"], [contenteditable]')) return;
+      if (inFocusable(e.target)) return;
       if (e.key === '/') {
         e.preventDefault();
         showTab('design');
@@ -1510,5 +1611,6 @@
   syncControls();
   setVerdict('#camverdict', '', 'Camera off', 'Press Start camera to test a printed code.');
   render();
+  markHistory();                        // the starting point is undoable to
   if (!location.hash) $('#quick').focus();
 })();

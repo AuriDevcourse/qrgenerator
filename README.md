@@ -46,7 +46,9 @@ comes as one-click brand pairs, print size as sticker/badge/flyer/poster/banner
 rather than millimetres. Your last eight codes sit one click away. Every change
 gets decoded and the verdict shown before you export.
 
-`/` jumps to the field. `Enter` copies the code.
+`/` jumps to the field. `Enter` copies the code. `Cmd/Ctrl+Z` and
+`Shift+Cmd/Ctrl+Z` step back and forward through your changes, and Reset clears
+everything except your theme and saved styles.
 
 **Batch.** Paste a list or drop a CSV. You get one verified code per row, a ZIP
 of all of them, or a print sheet. Styling comes from the Design tab.
