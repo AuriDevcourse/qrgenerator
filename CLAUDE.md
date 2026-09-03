@@ -63,11 +63,32 @@ warnings, exports, print, batch, camera, tabs, wiring, boot.
 - **The print sheet is a generated document, not a PDF writer.** The browser
   renders the SVG as vector and its own dialog saves the PDF.
 
+## The fast path is the point
+
+The Design tab is ordered by how often something is needed, not by how the code
+is built. Keep it that way:
+
+- **The omnibox comes first and is autofocused.** `R.detect()` in `qr-render.js`
+  works out what was pasted; `SIMPLE` in `app.js` lists the types whose whole
+  payload is one string, so the omnibox can drive them directly. Everything else
+  gets the detail grid, prefilled by the parsers.
+- **Styling lives in closed `<details>` groups.** Native disclosure, so keyboard
+  and screen readers work for free. Do not promote an option out of them without
+  a reason — the fast path is one field.
+- **Never steal keys from something focusable.** The global shortcut handler bails
+  on `input, textarea, select, button, a, summary, [role=button]`; without that,
+  Enter on a focused button copies the code instead of pressing the button.
+- **Colour chips must clear the contrast floor.** Brand teal is 2.13:1 on white
+  and ignite orange 2.84:1, so neither gets a chip. Check with
+  `R.contrast(colour, '#ffffff')` before adding one.
+
 ## Adding a payload type
 
 1. Add a builder to `payload` in `qr-render.js`.
-2. Add the type to `TYPES` and its fields to `FIELDS` in `app.js`.
-3. Add a case to `verify.html`.
+2. Add a branch to `R.detect()` so pasting one is recognised, plus a label in
+   `LABELS`, and a parser if the format is structured.
+3. Add the type to `TYPES` and its fields to `FIELDS` in `app.js`.
+4. Add cases to `verify.html` — one for the payload, one for the detection.
 
 ## Adding a visual option
 

@@ -351,7 +351,18 @@ input[type="file"] { font: 400 12px var(--font-body); color: var(--muted); max-w
 .filerow { display: flex; gap: 9px; align-items: center; flex-wrap: wrap }
 
 /* ---- right panel ------------------------------------------------------- */
-.panel { align-self: start; display: grid; gap: 13px }
+/* Sticky so the preview and the export buttons never scroll away. Its own
+   scroll container, because a panel taller than the viewport would otherwise
+   put the buttons out of reach. */
+.panel {
+  align-self: start; display: grid; gap: 13px;
+  position: sticky; top: 16px;
+  max-height: calc(100vh - 32px); overflow-y: auto;
+  scrollbar-width: thin;
+}
+@media (max-width: 940px) {
+  .panel { position: static; max-height: none; overflow: visible }
+}
 
 .card {
   background: var(--card); border-radius: var(--radius-xl); padding: 17px;
@@ -448,8 +459,9 @@ input[type="file"] { font: 400 12px var(--font-body); color: var(--muted); max-w
 /* the body text, not the dot — .dot is also a span */
 .notice > span:not(.dot) { grid-column: 2; grid-row: 2; color: var(--muted) }
 
-.exports { display: flex; flex-wrap: wrap; gap: 8px }
-.exports .btn { flex: 1 1 auto }
+/* A 2x2 grid rather than a wrapping flex row, so the fourth button never ends
+   up orphaned on its own line. */
+.exports { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
 
 .rawbox { margin-top: 18px }
 
@@ -579,7 +591,7 @@ label.check input { accent-color: var(--red); width: 15px; height: 15px; margin:
 }
 
 /* ---- exports ------------------------------------------------------------ */
-.exports .btn.wide { flex-basis: 100% }
+.exports .btn.wide { grid-column: 1 / -1 }
 
 /* ---- preview: output is not always square ------------------------------- */
 .stage img { max-height: 340px; width: auto; max-width: 100% }
@@ -597,3 +609,124 @@ label.check input { accent-color: var(--red); width: 15px; height: 15px; margin:
   font: 500 13px var(--font-body); font-variant-numeric: tabular-nums;
 }
 .hint.bad { color: var(--red) }
+
+
+/* ---- omnibox: the fast path -------------------------------------------- */
+.quickbar { display: grid; gap: 12px; margin-bottom: 28px }
+.quickfield { display: flex; gap: 9px; align-items: stretch }
+.quickfield input {
+  flex: 1 1 auto; min-width: 0;
+  height: 58px; padding: 0 20px;
+  background: var(--card); color: var(--foreground);
+  border: 1px solid var(--field-line); border-radius: 9999px;
+  font: 400 17px var(--font-body);
+  transition: border-color .14s, box-shadow .14s;
+}
+.quickfield input::placeholder { color: var(--muted) }
+.quickfield input:focus {
+  border-color: var(--foreground); outline: none;
+  box-shadow: 0 0 0 3px rgba(206, 15, 46, 0.22);
+}
+.quickfield .btn { height: 58px; padding: 0 22px; font-size: 14px; flex: none }
+
+.suggest {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--card-2); border-radius: var(--radius-md);
+  border-left: 3px solid var(--amber);
+  padding: 10px 14px; font-size: 13px; color: var(--muted);
+}
+.suggest b { color: var(--foreground) }
+.suggest .btn { height: 30px; padding: 0 13px; font-size: 12.5px }
+
+.kbdhint { margin: 0; font-size: 12px; color: var(--muted) }
+.kbdhint kbd {
+  display: inline-block; min-width: 18px; text-align: center;
+  padding: 1px 5px; margin: 0 1px;
+  border: 1px solid var(--field-line); border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  font: 500 11px var(--font-data); color: var(--foreground);
+}
+
+/* ---- collapsible option groups ----------------------------------------- */
+details.group {
+  border-top: 1px solid var(--border);
+}
+details.group:last-of-type { border-bottom: 1px solid var(--border) }
+details.group > summary {
+  cursor: pointer; list-style: none;
+  display: flex; align-items: center; gap: 9px;
+  padding: 14px 2px;
+  font: 500 14px var(--font-body); color: var(--foreground);
+}
+details.group > summary::-webkit-details-marker { display: none }
+details.group > summary::before {
+  content: ''; flex: none;
+  width: 7px; height: 7px; margin-left: 2px;
+  border-right: 1.6px solid var(--muted); border-bottom: 1.6px solid var(--muted);
+  transform: rotate(-45deg); transition: transform .15s;
+}
+details.group[open] > summary::before { transform: rotate(45deg) }
+details.group > summary:hover { color: var(--foreground) }
+.groupbody { padding: 2px 2px 22px }
+details.group.tight { border: 0 }
+details.group.tight > summary { padding: 12px 0 6px; font-size: 13px; color: var(--muted) }
+details.group.tight .groupbody { padding: 4px 0 0 }
+
+/* ---- chips (colour pairs, print sizes) --------------------------------- */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px }
+.chip-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 32px; padding: 0 13px; border-radius: 9999px; cursor: pointer;
+  background: transparent; color: var(--foreground);
+  border: 1px solid var(--pill-line);
+  font: 500 12.5px var(--font-body);
+  transition: border-color .14s, background-color .14s;
+}
+.chip-btn:hover { border-color: var(--outline-line-hi) }
+.chip-btn[aria-pressed="true"] {
+  background: var(--pill-on-bg); color: var(--pill-on-ink); border-color: var(--pill-on-bg);
+}
+.chip-dot { width: 13px; height: 13px; border-radius: 9999px; flex: none }
+.chip-sub { color: var(--muted); font-size: 11.5px }
+.chip-btn[aria-pressed="true"] .chip-sub { color: var(--pill-on-ink); opacity: .7 }
+
+/* ---- preset gallery ----------------------------------------------------- */
+.presetgal {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+.pwrap { position: relative; min-width: 0 }
+.pcell {
+  width: 100%; display: grid; gap: 7px; justify-items: center;
+  grid-template-rows: auto 1fr;
+  padding: 9px 7px; cursor: pointer;
+  background: var(--card); color: var(--foreground);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  font: 500 12px var(--font-body);
+  transition: border-color .14s, transform .14s;
+}
+.pcell:hover { border-color: var(--outline-line-hi); transform: translateY(-1px) }
+/* A square box whatever the preset's own aspect ratio, so every cell in the
+   row shares the same edges and the labels sit on one baseline. */
+.pthumb {
+  display: grid; place-items: center;
+  width: 100%; aspect-ratio: 1; background: #fff;
+  border-radius: var(--radius-sm); overflow: hidden;
+}
+.pthumb svg { display: block; width: auto; height: auto; max-width: 100%; max-height: 100% }
+.pname { text-align: center; line-height: 1.25; overflow-wrap: anywhere }
+.pdel {
+  position: absolute; top: 5px; right: 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; padding: 0; border: 0; border-radius: 9999px;
+  background: rgba(13, 13, 13, 0.65); color: #f2f2f2;
+  font-size: 14px; line-height: 1; cursor: pointer;
+}
+.pdel:hover { background: var(--red); color: #fff }
+
+/* ---- one-line readout -------------------------------------------------- */
+.readline {
+  font: 400 12.5px var(--font-body); color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.readline b { color: var(--foreground); font-weight: 600 }

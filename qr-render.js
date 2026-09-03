@@ -423,6 +423,85 @@
     }
   };
 
+  // ---- inbound parsing: what did the user paste? --------------------------
+
+  function unescapeWifi(v) {
+    return String(v || '').replace(/\\([\\;,:"])/g, '$1');
+  }
+
+  function parseWifi(raw) {
+    var out = { auth: 'WPA', ssid: '', password: '', hidden: false };
+    // WIFI:T:WPA;S:name;P:pass;H:true;;  — fields may arrive in any order.
+    String(raw).replace(/^WIFI:/i, '').split(/(?<!\\);/).forEach(function (part) {
+      var m = /^([TSPH]):([\s\S]*)$/i.exec(part);
+      if (!m) return;
+      var key = m[1].toUpperCase(), val = unescapeWifi(m[2]);
+      if (key === 'T') out.auth = val || 'WPA';
+      if (key === 'S') out.ssid = val;
+      if (key === 'P') out.password = val;
+      if (key === 'H') out.hidden = /^true$/i.test(val);
+    });
+    return out;
+  }
+
+  function parseVcard(raw) {
+    var out = {};
+    String(raw).split(/\r?\n/).forEach(function (line) {
+      var m = /^([A-Z-]+)(;[^:]*)?:([\s\S]*)$/i.exec(line.trim());
+      if (!m) return;
+      var tag = m[1].toUpperCase(), val = m[3].replace(/\\([;,:])/g, '$1');
+      if (tag === 'N') {
+        var parts = val.split(';');
+        out.last = parts[0] || ''; out.first = parts[1] || '';
+      }
+      if (tag === 'ORG') out.org = val;
+      if (tag === 'TITLE') out.title = val;
+      if (tag === 'TEL') out.phone = val;
+      if (tag === 'EMAIL') out.email = val;
+      if (tag === 'URL') out.url = val;
+    });
+    return out;
+  }
+
+  var LABELS = {
+    url: 'a link', text: 'plain text', wifi: 'Wi-Fi details', vcard: 'a contact card',
+    email: 'an email address', sms: 'a text message', phone: 'a phone number',
+    geo: 'coordinates', event: 'an event'
+  };
+
+  /**
+   * Work out what a pasted string is. Returns { type, data } or null.
+   * Ordered most-specific first so a vCard is never mistaken for text.
+   */
+  function detect(raw) {
+    var v = String(raw || '').trim();
+    if (!v) return null;
+
+    if (/^BEGIN:VCARD/i.test(v)) return { type: 'vcard', data: parseVcard(v) };
+    if (/^WIFI:/i.test(v)) return { type: 'wifi', data: parseWifi(v) };
+    if (/^BEGIN:VEVENT/i.test(v)) return { type: 'event', data: {} };
+
+    var m = /^mailto:([^?]+)/i.exec(v);
+    if (m) return { type: 'email', data: { to: m[1] } };
+    m = /^(?:tel|sms|smsto):\+?([\d\s().-]+)/i.exec(v);
+    if (m) return { type: 'phone', data: { phone: v.replace(/^[a-z]+:/i, '') } };
+    m = /^geo:(-?[\d.]+),(-?[\d.]+)/i.exec(v);
+    if (m) return { type: 'geo', data: { lat: +m[1], lng: +m[2] } };
+
+    if (/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v)) return { type: 'email', data: { to: v } };
+    if (/^\+?[\d][\d\s().-]{6,}$/.test(v)) {
+      return { type: 'phone', data: { phone: v.replace(/[\s().-]/g, '') } };
+    }
+    m = /^(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/.exec(v);
+    if (m) return { type: 'geo', data: { lat: +m[1], lng: +m[2] } };
+
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(v)) return { type: 'url', data: { url: v } };
+    if (/^(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}(?:[/?#]|$)/i.test(v) && !/\s/.test(v)) {
+      return { type: 'url', data: { url: v } };
+    }
+    return { type: 'text', data: { text: v } };
+  }
+
   // ---- misc ---------------------------------------------------------------
 
   // WCAG-style relative luminance, used for the contrast check.
@@ -471,6 +550,10 @@
     paths: paths,
     svg: svg,
     payload: payload,
+    detect: detect,
+    parseWifi: parseWifi,
+    parseVcard: parseVcard,
+    TYPE_LABELS: LABELS,
     contrast: contrast,
     worstContrast: worstContrast,
     hasNonAscii: hasNonAscii,

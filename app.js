@@ -94,6 +94,27 @@
     { name: 'Signage', style: { fg: '#ce0f2e', bg: '#ffffff', style: 'rounded', eyeStyle: 'rounded', ec: 'H', gradOn: false, eyeOn: false, logoMode: 'mark', logoMark: 'tbbq-red', logoPct: 0.22, frameOn: true, frameText: 'GET TICKETS', frameFill: '#ce0f2e', frameTextColor: '#ffffff', margin: 4 } }
   ];
 
+  // Chips are limited to pairs that clear the ~4:1 contrast floor. Brand teal
+  // (2.13:1 on white) and ignite orange (2.84:1) are deliberately absent; the
+  // gradient is offered because it is the signature look, and the app warns.
+  var COLOUR_CHIPS = [
+    { name: 'Founder red', fg: '#ce0f2e', bg: '#ffffff', gradOn: false },
+    { name: 'Black',       fg: '#0d0d0d', bg: '#ffffff', gradOn: false },
+    { name: 'Grit',        fg: '#5e101a', bg: '#ffffff', gradOn: false },
+    { name: 'Ember',       fg: '#d74a01', bg: '#ffffff', gradOn: false },
+    { name: 'Gradient',    bg: '#ffffff', gradOn: true, gradFrom: '#fa7000', gradTo: '#ce0f2e', gradAngle: 120 },
+    { name: 'Inverted',    fg: '#f2f2f2', bg: '#0d0d0d', gradOn: false }
+  ];
+
+  // Real-world sizes, so nobody has to reason in millimetres. The distance
+  // comes from the 10x-width rule.
+  var PRINT_CHIPS = [
+    { name: 'Sticker', mm: 25 }, { name: 'Badge', mm: 40 },
+    { name: 'Flyer', mm: 60 }, { name: 'Poster', mm: 120 }, { name: 'Banner', mm: 250 }
+  ];
+
+  var RECENT_KEY = 'quietzone.recent.v1';
+
   // ---- persistence --------------------------------------------------------
 
   function safeGet(key) {
@@ -107,6 +128,23 @@
     try { return JSON.parse(safeGet(STORE_KEY) || '[]'); } catch (e) { return []; }
   }
   function writePresets(list) { safeSet(STORE_KEY, JSON.stringify(list)); }
+
+  function recents() {
+    try { return JSON.parse(safeGet(RECENT_KEY) || '[]'); } catch (e) { return []; }
+  }
+
+  // Remembers what was made, most recent first, de-duplicated on the payload.
+  function pushRecent() {
+    var text = payload();
+    if (!text) return;
+    var list = recents().filter(function (r) { return r.text !== text; });
+    list.unshift({
+      text: text, type: state.type, data: JSON.parse(JSON.stringify(state.data)),
+      style: styleOf(state), at: Date.now()
+    });
+    safeSet(RECENT_KEY, JSON.stringify(list.slice(0, 8)));
+    renderRecents();
+  }
 
   function styleOf(src) {
     var out = {};
@@ -209,17 +247,58 @@
     }).join('');
   }
 
-  function renderPresets() {
+  // Each preset draws itself, so a look can be chosen by sight rather than by
+  // clicking through and watching the preview.
+  function presetThumb(style) {
+    return R.svg('https://techbbq.org', Object.assign(optsFrom(fullStyle(style), null), { px: 104 }));
+  }
+
+  function renderPresetGallery() {
     var mine = savedPresets();
-    var html = BUILTIN_PRESETS.map(function (p, i) {
-      return '<button type="button" data-preset="b' + i + '">' + esc(p.name) + '</button>';
+    // The delete control is a sibling, not a child: nesting a button inside a
+    // button is invalid and breaks keyboard and screen-reader behaviour.
+    var cell = function (p, id, own) {
+      return '<div class="pwrap">' +
+        '<button type="button" class="pcell" data-preset="' + id + '">' +
+        '<span class="pthumb">' + presetThumb(p.style) + '</span>' +
+        '<span class="pname">' + esc(p.name) + '</span>' +
+        '</button>' +
+        (own ? '<button type="button" class="pdel" data-del="' + id.slice(1) +
+          '" aria-label="Delete the ' + escAttr(p.name) + ' style">&times;</button>' : '') +
+        '</div>';
+    };
+    $('#presetgal').innerHTML =
+      BUILTIN_PRESETS.map(function (p, i) { return cell(p, 'b' + i, false); }).join('') +
+      mine.map(function (p, i) { return cell(p, 'u' + i, true); }).join('');
+  }
+
+  function renderColourChips() {
+    $('#colorchips').innerHTML = COLOUR_CHIPS.map(function (c, i) {
+      var sw = c.gradOn
+        ? 'background:linear-gradient(120deg,' + c.gradFrom + ',' + c.gradTo + ')'
+        : 'background:' + c.fg;
+      return '<button type="button" class="chip-btn" data-chip="' + i + '">' +
+        '<span class="chip-dot" style="' + sw + ';outline:1px solid ' + c.bg + '"></span>' +
+        esc(c.name) + '</button>';
     }).join('');
-    html += mine.map(function (p, i) {
-      return '<button type="button" class="own" data-preset="u' + i + '">' + esc(p.name) +
-        '<span class="x" data-del="' + i + '" role="button" tabindex="0" aria-label="Delete ' +
-        escAttr(p.name) + '">&times;</span></button>';
+  }
+
+  function renderPrintChips() {
+    $('#printchips').innerHTML = PRINT_CHIPS.map(function (c, i) {
+      return '<button type="button" class="chip-btn" data-print="' + i + '">' +
+        esc(c.name) + ' <span class="chip-sub">' + c.mm + 'mm</span></button>';
     }).join('');
-    $('#presets').innerHTML = html;
+  }
+
+  function renderRecents() {
+    var list = recents();
+    $('#recentblock').hidden = list.length === 0;
+    $('#recents').innerHTML = list.map(function (r, i) {
+      var label = r.text.replace(/^https?:\/\//, '');
+      if (label.length > 30) label = label.slice(0, 29) + '…';
+      return '<button type="button" data-recent="' + i + '" title="' + escAttr(r.text) + '">' +
+        esc(label) + '</button>';
+    }).join('');
   }
 
   function renderMarkVars() {
@@ -227,6 +306,48 @@
       return '<button type="button" data-mark="' + k + '" aria-pressed="' +
         (state.logoMark === k) + '">' + R.MARKS[k].label + '</button>';
     }).join('');
+  }
+
+  // Types whose whole payload is one string, so the omnibox can drive them.
+  var SIMPLE = { url: 'url', text: 'text' };
+
+  function syncQuick() {
+    var simple = !!SIMPLE[state.type];
+    $('#quick').placeholder = simple
+      ? 'Paste a link, email, phone number, Wi-Fi…'
+      : 'Paste ' + (R.TYPE_LABELS[state.type] || 'a value') + ' to fill the fields below';
+    if (simple) $('#quick').value = state.data[SIMPLE[state.type]] || '';
+    else $('#quick').value = '';
+    $('#detailblock').hidden = simple;
+  }
+
+  // Offer a switch when what was pasted clearly is not the current type.
+  function offerSwitch(raw) {
+    var box = $('#suggest');
+    var hit = R.detect(raw);
+    if (!hit || hit.type === state.type || (SIMPLE[state.type] && hit.type === 'text')) {
+      box.hidden = true;
+      pendingSwitch = null;
+      return;
+    }
+    pendingSwitch = hit;
+    box.hidden = false;
+    box.innerHTML = '<span>That looks like <b>' + esc(R.TYPE_LABELS[hit.type] || hit.type) +
+      '</b>.</span><button type="button" class="btn primary" id="dosuggest">Use it</button>' +
+      '<button type="button" class="btn outline" id="nosuggest">Keep as is</button>';
+  }
+
+  var pendingSwitch = null;
+
+  function applySwitch() {
+    if (!pendingSwitch) return;
+    var hit = pendingSwitch;
+    state.type = hit.type;
+    Object.keys(hit.data || {}).forEach(function (k) { state.data[k] = hit.data[k]; });
+    pendingSwitch = null;
+    $('#suggest').hidden = true;
+    renderTypes(); renderFields(); syncQuick(); render();
+    if (!SIMPLE[state.type]) $('#detailblock').scrollIntoView({ block: 'nearest' });
   }
 
   // Push state back into every control — used on load, on preset apply, on link restore.
@@ -269,6 +390,8 @@
     $('#frameopts').hidden = !state.frameOn;
     syncLogoUi();
     renderMarkVars();
+    renderColourChips();
+    syncQuick();
   }
 
   function syncLogoUi() {
@@ -295,20 +418,35 @@
     return state.logoMode === 'custom' && !!state.logoHref;
   }
 
-  function opts() {
-    var on = logoActive();
+  // Render options from any style object — the live state, or a preset being
+  // previewed as a thumbnail.
+  function optsFrom(st, logoHref) {
+    var markOn = st.logoMode === 'mark';
+    var customOn = st.logoMode === 'custom' && !!logoHref;
+    var on = markOn || customOn;
     return {
-      ec: state.ec, style: state.style, eyeStyle: state.eyeStyle, margin: state.margin,
-      fg: state.fg, bg: state.bg,
-      fgGradient: state.gradOn ? { from: state.gradFrom, to: state.gradTo, angle: state.gradAngle } : null,
-      eyeColor: state.eyeOn ? state.eyeColor : null,
-      logoPct: on ? state.logoPct : 0,
-      logoMark: on && state.logoMode === 'mark' ? state.logoMark : null,
-      logoHref: on && state.logoMode === 'custom' ? state.logoHref : null,
-      frame: state.frameOn
-        ? { text: state.frameText, fill: state.frameFill, textColor: state.frameTextColor }
+      ec: st.ec, style: st.style, eyeStyle: st.eyeStyle, margin: st.margin,
+      fg: st.fg, bg: st.bg,
+      fgGradient: st.gradOn ? { from: st.gradFrom, to: st.gradTo, angle: st.gradAngle } : null,
+      eyeColor: st.eyeOn ? st.eyeColor : null,
+      logoPct: on ? st.logoPct : 0,
+      logoMark: markOn ? st.logoMark : null,
+      logoHref: customOn ? logoHref : null,
+      frame: st.frameOn
+        ? { text: st.frameText, fill: st.frameFill, textColor: st.frameTextColor }
         : null
     };
+  }
+
+  function opts() { return optsFrom(state, state.logoHref); }
+
+  // A preset only carries the keys it overrides, so fill the rest from defaults.
+  function fullStyle(partial) {
+    var base = styleOf(defaults());
+    Object.keys(partial || {}).forEach(function (k) {
+      if (partial[k] !== undefined) base[k] = partial[k];
+    });
+    return base;
   }
 
   // ---- rasterising --------------------------------------------------------
@@ -354,9 +492,13 @@
   var lastSvg = '';
   var lastPngUrl = '';
 
+  var recentTimer = 0;
+
   function render() {
     var text = payload();
     var my = ++token;
+    clearTimeout(recentTimer);
+    recentTimer = setTimeout(pushRecent, 2500);
     var bytes = R.utf8len(text);
     var max = R.MAX_BYTES[state.ec];
 
@@ -436,6 +578,12 @@
     $('#s-need').textContent = m
       ? needMm.toFixed(0) + ' mm · ' + Math.round(needMm / 25.4 * 300) + ' px @300dpi'
       : '—';
+
+    // One line carries what matters at a glance; the rest is behind a toggle.
+    $('#readline').innerHTML = m
+      ? '<b>v' + m.version + '</b> · ' + m.size + '×' + m.size + ' · min <b>' +
+        widthMm.toFixed(0) + ' mm</b> · ' + bytes + '/' + max + ' bytes · EC ' + state.ec
+      : '&mdash;';
 
     var pct = max ? Math.min(100, bytes / max * 100) : 0;
     $('#cap').dataset.level = pct > 100 ? 'crit' : pct > 85 ? 'warn' : 'ok';
@@ -818,11 +966,90 @@
       $('#tabbtn-' + order[next]).focus();
     });
 
+    // ---- omnibox ----
+    var quick = $('#quick');
+    quick.addEventListener('input', function (e) {
+      var v = e.target.value;
+      if (SIMPLE[state.type]) {
+        state.data[SIMPLE[state.type]] = v;
+        render();
+      }
+      offerSwitch(v);
+    });
+    quick.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (pendingSwitch) applySwitch(); else copyPng();
+      }
+      if (e.key === 'Escape') { $('#suggest').hidden = true; pendingSwitch = null; }
+    });
+
+    $('#suggest').addEventListener('click', function (e) {
+      if (e.target.id === 'dosuggest') applySwitch();
+      if (e.target.id === 'nosuggest') { $('#suggest').hidden = true; pendingSwitch = null; }
+    });
+
+    // Reading the clipboard needs permission and can be refused; fall back to focus.
+    $('#quickpaste').addEventListener('click', function () {
+      if (!navigator.clipboard || !navigator.clipboard.readText) {
+        quick.focus(); flash('#quickpaste', 'Press Cmd+V');
+        return;
+      }
+      navigator.clipboard.readText().then(function (t) {
+        if (!t) { quick.focus(); return; }
+        quick.value = t.trim();
+        quick.dispatchEvent(new Event('input'));
+        if (pendingSwitch) applySwitch();
+      }).catch(function () { quick.focus(); flash('#quickpaste', 'Press Cmd+V'); });
+    });
+
+    // ---- one-click colour pairs ----
+    $('#colorchips').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-chip]');
+      if (!b) return;
+      var c = COLOUR_CHIPS[+b.dataset.chip];
+      ['fg', 'bg', 'gradOn', 'gradFrom', 'gradTo', 'gradAngle'].forEach(function (k) {
+        if (c[k] !== undefined) state[k] = c[k];
+      });
+      syncControls(); render();
+    });
+
+    // ---- real-world print sizes ----
+    $('#printchips').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-print]');
+      if (!b) return;
+      var c = PRINT_CHIPS[+b.dataset.print];
+      $('#printmm').value = c.mm;
+      // The 10x-width rule: a code scans from about ten times its own width,
+      // so a 40 mm code reads at roughly 40 cm.
+      state.distanceCm = c.mm;
+      $('#distance').value = state.distanceCm;
+      $$('#printchips button').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(x === b));
+      });
+      render();
+    });
+
+    // ---- recents ----
+    $('#recents').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-recent]');
+      if (!b) return;
+      var r = recents()[+b.dataset.recent];
+      if (!r) return;
+      state.type = r.type;
+      Object.keys(r.data || {}).forEach(function (k) { state.data[k] = r.data[k]; });
+      if (r.style) STYLE_KEYS.forEach(function (k) {
+        if (r.style[k] !== undefined) state[k] = r.style[k];
+      });
+      renderTypes(); renderFields(); syncControls(); render();
+    });
+
     $('#types').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-type]');
       if (!b) return;
       state.type = b.dataset.type;
-      renderTypes(); renderFields(); render();
+      $('#suggest').hidden = true; pendingSwitch = null;
+      renderTypes(); renderFields(); syncQuick(); render();
     });
 
     ['input', 'change'].forEach(function (ev) {
@@ -830,6 +1057,7 @@
         var k = e.target.dataset.k;
         if (!k) return;
         state.data[k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+        if (SIMPLE[state.type] && k === SIMPLE[state.type]) $('#quick').value = e.target.value;
         render();
       });
     });
@@ -946,20 +1174,20 @@
     }
 
     // presets
-    $('#presets').addEventListener('click', function (e) {
+    $('#presetgal').addEventListener('click', function (e) {
       var del = e.target.closest('[data-del]');
       if (del) {
         e.stopPropagation();
         var list = savedPresets();
         list.splice(+del.dataset.del, 1);
-        writePresets(list); renderPresets();
+        writePresets(list); renderPresetGallery();
         return;
       }
       var b = e.target.closest('button[data-preset]');
       if (!b) return;
       var id = b.dataset.preset;
       var p = id[0] === 'b' ? BUILTIN_PRESETS[+id.slice(1)] : savedPresets()[+id.slice(1)];
-      if (p) applyStyle(p.style);
+      if (p) applyStyle(fullStyle(p.style));
     });
     $('#presetadd').addEventListener('click', function () {
       var name = $('#presetname').value.trim();
@@ -969,7 +1197,7 @@
       list.push({ name: name, style: styleOf(state) });
       writePresets(list);
       $('#presetname').value = '';
-      renderPresets();
+      renderPresetGallery();
     });
 
     // share link
@@ -1045,7 +1273,16 @@
 
     // shortcuts
     document.addEventListener('keydown', function (e) {
-      if (e.target.matches('input, textarea, select')) return;
+      // Never steal keys from something focusable — Enter on a focused button
+      // must press that button, not copy the code.
+      if (e.target.closest('input, textarea, select, button, a, summary, [role="button"], [contenteditable]')) return;
+      if (e.key === '/') {
+        e.preventDefault();
+        showTab('design');
+        $('#quick').focus(); $('#quick').select();
+        return;
+      }
+      if (e.key === 'Enter') { e.preventDefault(); copyPng(); return; }
       if (!(e.metaKey || e.ctrlKey)) return;
       if (e.key === 'c') { e.preventDefault(); copyPng(); }
       if (e.key === 's') { e.preventDefault(); if (lastPngUrl) saveFile(lastPngUrl, filename('png')); }
@@ -1058,9 +1295,12 @@
   readHash();
   renderTypes();
   renderFields();
-  renderPresets();
+  renderPresetGallery();
+  renderPrintChips();
+  renderRecents();
   bind();
   syncControls();
   setVerdict('#camverdict', '', 'Camera off', 'Press Start camera to test a printed code.');
   render();
+  if (!location.hash) $('#quick').focus();
 })();

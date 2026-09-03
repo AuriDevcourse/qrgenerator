@@ -28,11 +28,19 @@ the type falls back to the system sans stack. Encoder and decoder are vendored.
 
 Three tabs:
 
-**Design** — nine payload types (link, text, Wi-Fi, contact, email, SMS, phone,
-location, calendar event). Module shape, corner-eye shape, error correction, quiet
-zone, flat or gradient fill, a separate eye colour, a centre mark, and a caption
-frame. Five brand presets to start from, plus your own saved styles. Every change
-is re-decoded and the verdict shown before you export.
+**Design** — the page opens focused on one field. Paste anything and you have a
+code: a link, an email address, a phone number, coordinates, a `WIFI:` string, a
+whole vCard. It works out what you pasted and offers the right type, prefilled —
+so a Wi-Fi string becomes network/password/security fields rather than raw text.
+
+Everything else is optional and folded away: colour, shape and correction, centre
+mark, caption frame. Five presets each draw themselves as a thumbnail, so a look is
+chosen by sight. Colour comes as one-click brand pairs, print size as real-world
+chips (sticker, badge, flyer, poster, banner) rather than millimetres. The last
+eight codes you made are one click away. Every change is re-decoded and the verdict
+shown before you export.
+
+`/` jumps to the field, `Enter` copies the code.
 
 **Batch** — paste a list or drop a CSV, get one verified code per row, download
 them all as a ZIP, or lay them out on a print sheet. Uses whatever style the Design
@@ -46,7 +54,7 @@ what a scanner reads. Frames are decoded in the browser; no video leaves the pag
 
 | | |
 |---|---|
-| Copy PNG / Copy SVG | to the clipboard (`Cmd/Ctrl+C` copies the PNG) |
+| Copy PNG / Copy SVG | to the clipboard (`Enter` or `Cmd/Ctrl+C` copies the PNG) |
 | Save PNG / Save SVG | to a file (`Cmd/Ctrl+S` saves the PNG) |
 | Print sheet | N copies at an exact mm width on A4 with cut guides — "Save as PDF" in the print dialog gives a vector file |
 | Download ZIP | every verified code from a batch run |
