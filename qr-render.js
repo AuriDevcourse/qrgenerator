@@ -111,6 +111,14 @@
 
   function n(v) { return Math.round(v * 1000) / 1000; }
 
+  // Every value interpolated into an SVG attribute goes through this, so no
+  // caller can break out of the attribute even if it skipped its own checks.
+  function attr(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   // Per-cell rounding that only rounds corners with no orthogonal neighbour,
   // so runs of adjacent modules merge into one smooth blob.
   function roundedCellPath(x, y, rad, up, down, left, right) {
@@ -245,7 +253,7 @@
       fill = 'url(#' + id + ')';
     }
     return out + '<g transform="translate(' + n(ox) + ' ' + n(oy) + ') scale(' + n(scale) + ')">' +
-      '<path d="' + mark.d + '" fill="' + fill + '"/></g>';
+      '<path d="' + mark.d + '" fill="' + attr(fill) + '"/></g>';
   }
 
   // ---- SVG ----------------------------------------------------------------
@@ -262,8 +270,8 @@
     var v = gradientVector(grad.angle);
     return '<linearGradient id="' + id + '" x1="' + v.x1 + '" y1="' + v.y1 +
       '" x2="' + v.x2 + '" y2="' + v.y2 + '">' +
-      '<stop offset="0" stop-color="' + grad.from + '"/>' +
-      '<stop offset="1" stop-color="' + grad.to + '"/></linearGradient>';
+      '<stop offset="0" stop-color="' + attr(grad.from) + '"/>' +
+      '<stop offset="1" stop-color="' + attr(grad.to) + '"/></linearGradient>';
   }
 
   var FRAME = { pad: 1.6, band: 6, radius: 2.4 };
@@ -318,19 +326,19 @@
     if (opts.frame) {
       var f = opts.frame;
       out += '<rect width="' + n(dim.vbW) + '" height="' + n(dim.vbH) +
-        '" rx="' + n(FRAME.radius) + '" fill="' + (f.fill || '#000000') + '"/>';
+        '" rx="' + n(FRAME.radius) + '" fill="' + attr(f.fill || '#000000') + '"/>';
     }
 
     if (bg !== 'transparent') {
       out += '<rect x="' + n(dim.qx) + '" y="' + n(dim.qy) + '" width="' + n(dim.vbW - dim.qx * 2) +
         '" height="' + n(dim.vbW - dim.qx * 2) + '"' +
         (opts.frame ? ' rx="' + n(FRAME.radius * 0.55) + '"' : '') +
-        ' fill="' + bg + '"/>';
+        ' fill="' + attr(bg) + '"/>';
     }
 
     var body = '';
-    if (p.data) body += '<path d="' + p.data + '" fill="' + dataFill + '"/>';
-    if (p.eyes) body += '<path fill-rule="evenodd" d="' + p.eyes + '" fill="' + eyeFill + '"/>';
+    if (p.data) body += '<path d="' + p.data + '" fill="' + attr(dataFill) + '"/>';
+    if (p.eyes) body += '<path fill-rule="evenodd" d="' + p.eyes + '" fill="' + attr(eyeFill) + '"/>';
     if (opts.logoPct) {
       var win = logoWindow(m.size, opts.logoPct);
       if (opts.logoMark && MARKS[opts.logoMark]) {
@@ -338,7 +346,7 @@
       } else if (opts.logoHref) {
         var span = win.c1 - win.c0 + 1;
         var lp = 0.5;
-        body += '<image href="' + opts.logoHref + '" x="' + n(win.c0 + margin + lp) +
+        body += '<image href="' + attr(opts.logoHref) + '" x="' + n(win.c0 + margin + lp) +
           '" y="' + n(win.r0 + margin + lp) + '" width="' + n(span - lp * 2) +
           '" height="' + n(span - lp * 2) + '" preserveAspectRatio="xMidYMid meet"/>';
       }
@@ -360,7 +368,7 @@
         '" text-anchor="middle" dominant-baseline="middle"' +
         ' font-family="Inter, Helvetica, Arial, sans-serif" font-weight="700"' +
         ' font-size="' + n(fs) + '" letter-spacing="' + n(fs * 0.08) + '"' +
-        ' fill="' + (opts.frame.textColor || '#ffffff') + '">' +
+        ' fill="' + attr(opts.frame.textColor || '#ffffff') + '">' +
         String(opts.frame.text).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</text>';
     }
 

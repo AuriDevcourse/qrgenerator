@@ -35,6 +35,27 @@ QR code generator that verifies its own output. Vanilla JS, no framework.
   light-theme rule needing an exception. Add new chrome colours as tokens.
   `--surface` feeds the focus ring, so the cover must keep it light.
 
+## A shared link is untrusted input
+
+`readHash()` parses an attacker-controlled URL. Every value it carries goes
+through `sanitizeStyle()` / `sanitizeData()` first: enums are whitelisted,
+numbers clamped, colours matched against `#rgb` or `#rrggbb`, strings capped.
+This is not decoration. Before it existed, a crafted "Copy link" URL put
+`red"></span><img src=x onerror=...>` into `state.fg`, which `dot()` wrote
+straight into `innerHTML`, and it executed.
+
+- **Never write a state value into markup without validating it.** `colour()`
+  is the gate for anything that reaches a `style` attribute.
+- **`qr-render.js` escapes every interpolated attribute** through `attr()`.
+  Keep it that way even though callers validate too; it is the second layer.
+- **`localStorage` presets go through the same gate**, because an injection
+  could have written them.
+- **The built page pins its four inline scripts by CSP hash.** `build.mjs`
+  hashes the exact element body, whitespace included. Hash the string you emit,
+  not the source before wrapping, or every script is refused.
+- Seven assertions in `verify.html` cover the escaping. They are not decode
+  tests; do not delete them when trimming cases.
+
 ## Scannability rules, do not undo these
 
 Each came out of the decode suite, not documentation:

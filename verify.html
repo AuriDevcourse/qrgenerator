@@ -142,10 +142,60 @@ CASES.push({ name: 'max-ish 2900 @ EC L', text: 'A'.repeat(2900), ec: 'L' });
         '<br><span style="color:#888">' + QRRender.utf8len(c.text) + ' B · ' + px + 'px</span></div>');
       console.log('[TEST]', label.split(' ')[0], c.name);
     }
-    var msg = pass + ' pass · ' + fail + ' fail · ' + xfail + ' expected-fail  (of ' + CASES.length + ')';
+    // ---- hardening checks -------------------------------------------------
+    // These are not decode tests. They guard the fix for a real injection bug:
+    // a crafted share link put an unescaped colour into an SVG attribute and
+    // into innerHTML, and it executed.
+    var HOSTILE = '#000" onload="boom()';
+    var HARD = [
+      ['renderer escapes fg', function () {
+        return !hasRawQuoteInAttr(QRRender.svg('x', { fg: HOSTILE, px: 120 }));
+      }],
+      ['renderer escapes bg', function () {
+        return !hasRawQuoteInAttr(QRRender.svg('x', { bg: HOSTILE, px: 120 }));
+      }],
+      ['renderer escapes eye colour', function () {
+        return !hasRawQuoteInAttr(QRRender.svg('x', { eyeColor: HOSTILE, eyeStyle: 'rounded', px: 120 }));
+      }],
+      ['renderer escapes gradient stops', function () {
+        return !hasRawQuoteInAttr(QRRender.svg('x', { fgGradient: { from: HOSTILE, to: HOSTILE }, px: 120 }));
+      }],
+      ['renderer escapes frame colours', function () {
+        return !hasRawQuoteInAttr(QRRender.svg('x', {
+          frame: { text: 'hi', fill: HOSTILE, textColor: HOSTILE }, px: 120 }));
+      }],
+      ['renderer escapes the mark colour', function () {
+        return !hasRawQuoteInAttr(QRRender.svg('x', {
+          logoMark: 'tbbq-custom', markColor: HOSTILE, logoPct: 0.2, ec: 'H', px: 120 }));
+      }],
+      ['caption text cannot open a tag', function () {
+        return QRRender.svg('x', { frame: { text: '<script>boom()</' + 'script>' }, px: 120 })
+          .indexOf('<script') === -1;
+      }]
+    ];
+
+    function hasRawQuoteInAttr(svg) {
+      return (svg.match(/="[^"]*"/g) || []).some(function (a) {
+        return a.slice(2, -1).indexOf('"') > -1;
+      });
+    }
+
+    HARD.forEach(function (h) {
+      var ok = false;
+      try { ok = h[1](); } catch (e) { ok = false; }
+      if (ok) pass++; else fail++;
+      var card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = '<div class="n"><span class="' + (ok ? 'pass' : 'fail') + '">' +
+        (ok ? 'PASS' : 'FAIL') + '</span><br>' + h[0] + '</div>';
+      out.appendChild(card);
+      console.log('[TEST]', ok ? 'PASS' : 'FAIL', h[0]);
+    });
+
+    var msg = pass + ' pass · ' + fail + ' fail · ' + xfail + ' expected-fail  (of ' + (CASES.length + HARD.length) + ')';
     document.getElementById('sum').textContent = msg;
     document.getElementById('sum').className = fail ? 'fail' : 'pass';
-    document.title = 'self-test ' + pass + '/' + CASES.length;
+    document.title = 'self-test ' + pass + '/' + (CASES.length + HARD.length);
     console.log('[TEST] SUMMARY ' + msg);
   })();
 })();

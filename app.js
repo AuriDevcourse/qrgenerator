@@ -154,12 +154,84 @@
     return out;
   }
 
-  function applyStyle(style) {
+  function applyStyle(raw) {
+    var style = sanitizeStyle(raw, state);
     STYLE_KEYS.forEach(function (k) {
       if (style[k] !== undefined) state[k] = style[k];
     });
     syncControls();
     render();
+  }
+
+  // ---- validating anything that arrives from a URL ------------------------
+  //
+  // A shared link is attacker-controlled input. Every value it carries is
+  // whitelisted or coerced here before it reaches state, because state values
+  // end up in markup and in SVG attributes.
+
+  var ENUMS = {
+    ec: ['L', 'M', 'Q', 'H'],
+    style: ['square', 'rounded', 'dots'],
+    eyeStyle: ['square', 'rounded', 'circle'],
+    logoMode: ['none', 'mark', 'custom']
+  };
+  var COLOUR_KEYS = ['fg', 'bg', 'gradFrom', 'gradTo', 'eyeColor',
+    'frameFill', 'frameTextColor', 'markColor'];
+  var BOOL_KEYS = ['gradOn', 'eyeOn', 'frameOn'];
+
+  // #rgb or #rrggbb only. Named colours and CSS functions are rejected: they
+  // are the opening for style-attribute injection and nothing here needs them.
+  function colour(v, fallback) {
+    return (typeof v === 'string' && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v.trim()))
+      ? v.trim().toLowerCase()
+      : fallback;
+  }
+
+  function clampNum(v, lo, hi, fallback) {
+    var n = Number(v);
+    return isFinite(n) ? Math.min(hi, Math.max(lo, n)) : fallback;
+  }
+
+  function sanitizeStyle(raw, base) {
+    var out = {};
+    if (!raw || typeof raw !== 'object') return out;
+    Object.keys(ENUMS).forEach(function (k) {
+      if (ENUMS[k].indexOf(raw[k]) > -1) out[k] = raw[k];
+    });
+    COLOUR_KEYS.forEach(function (k) {
+      var c = colour(raw[k], null);
+      if (c) out[k] = c;
+    });
+    BOOL_KEYS.forEach(function (k) {
+      if (typeof raw[k] === 'boolean') out[k] = raw[k];
+    });
+    if (raw.margin !== undefined) out.margin = Math.round(clampNum(raw.margin, 0, 8, base.margin));
+    if (raw.gradAngle !== undefined) out.gradAngle = Math.round(clampNum(raw.gradAngle, 0, 359, base.gradAngle));
+    if (raw.logoPct !== undefined) out.logoPct = clampNum(raw.logoPct, 0.08, 0.35, base.logoPct);
+    if (Object.prototype.hasOwnProperty.call(R.MARKS, raw.logoMark)) out.logoMark = raw.logoMark;
+    if (typeof raw.frameText === 'string') out.frameText = raw.frameText.slice(0, 40);
+    return out;
+  }
+
+  // Payload fields: known keys only, and bounded in length.
+  var FIELD_KEYS = (function () {
+    var seen = {};
+    Object.keys(FIELDS).forEach(function (t) {
+      FIELDS[t].forEach(function (d) { seen[d.k] = true; });
+    });
+    return seen;
+  })();
+
+  function sanitizeData(raw) {
+    var out = {};
+    if (!raw || typeof raw !== 'object') return out;
+    Object.keys(raw).forEach(function (k) {
+      if (!FIELD_KEYS[k]) return;
+      var v = raw[k];
+      if (typeof v === 'boolean' || typeof v === 'number') out[k] = v;
+      else if (typeof v === 'string') out[k] = v.slice(0, 2000);
+    });
+    return out;
   }
 
   // ---- shareable link -----------------------------------------------------
@@ -188,14 +260,24 @@
 
   function readHash() {
     if (!location.hash || location.hash.length < 2) return;
+    if (location.hash.length > 8000) return;          // no oversized payloads
     try {
       var obj = JSON.parse(b64urlDecode(location.hash.slice(1)));
       if (obj.t && FIELDS[obj.t]) state.type = obj.t;
-      if (obj.d) Object.keys(obj.d).forEach(function (k) { state.data[k] = obj.d[k]; });
-      if (obj.s) STYLE_KEYS.forEach(function (k) {
-        if (obj.s[k] !== undefined) state[k] = obj.s[k];
+
+      var data = sanitizeData(obj.d);
+      Object.keys(data).forEach(function (k) { state.data[k] = data[k]; });
+
+      var style = sanitizeStyle(obj.s, state);
+      STYLE_KEYS.forEach(function (k) {
+        if (style[k] !== undefined) state[k] = style[k];
       });
-      if (obj.x) { state.expiry = obj.x.e || ''; state.expiryInLink = !!obj.x.l; }
+
+      if (obj.x) {
+        // ISO date only; anything else is dropped rather than shown back.
+        state.expiry = /^\d{4}-\d{2}-\d{2}$/.test(obj.x.e) ? obj.x.e : '';
+        state.expiryInLink = obj.x.l === true;
+      }
     } catch (e) { /* a malformed link just falls back to defaults */ }
   }
 
@@ -264,7 +346,7 @@
     var cell = function (p, id, own) {
       return '<div class="pwrap">' +
         '<button type="button" class="pcell" data-preset="' + id + '">' +
-        '<span class="pthumb">' + presetThumb(p.style) + '</span>' +
+        '<span class="pthumb" aria-hidden="true">' + presetThumb(p.style) + '</span>' +
         '<span class="pname">' + esc(p.name) + '</span>' +
         '</button>' +
         (own ? '<button type="button" class="pdel" data-del="' + id.slice(1) +
@@ -356,12 +438,7 @@
 
   // Push state back into every control: on load, on preset apply, on link restore.
   function syncControls() {
-    $$('.seg').forEach(function (seg) {
-      var key = seg.dataset.key;
-      seg.querySelectorAll('button').forEach(function (b) {
-        b.setAttribute('aria-pressed', String(state[key] === b.dataset.val));
-      });
-    });
+    $$('.seg').forEach(function (seg) { markSeg(seg, state[seg.dataset.key]); });
     var pairs = [['#fg', 'fg'], ['#bg', 'bg'], ['#gradfrom', 'gradFrom'], ['#gradto', 'gradTo'],
       ['#eyecolor', 'eyeColor'], ['#framefill', 'frameFill'], ['#frametextcolor', 'frameTextColor']];
     pairs.forEach(function (p) {
@@ -407,12 +484,13 @@
   // Swatches in the closed summaries, so the current colours are visible
   // without opening every group.
   function dot(c) {
-    return '<span class="sumdot" style="background:' + c + '"></span>';
+    return '<span class="sumdot" aria-hidden="true" style="background:' + colour(c, '#000000') + '"></span>';
   }
 
   function syncSummaries() {
     $('#sum-colour').innerHTML = state.gradOn
-      ? '<span class="sumdot" style="background:linear-gradient(120deg,' + state.gradFrom + ',' + state.gradTo + ')"></span>' + dot(state.bg)
+      ? '<span class="sumdot" style="background:linear-gradient(120deg,' +
+        colour(state.gradFrom, '#000000') + ',' + colour(state.gradTo, '#000000') + ')"></span>' + dot(state.bg)
       : dot(state.fg) + dot(state.bg);
     if (state.eyeOn) $('#sum-colour').innerHTML += dot(state.eyeColor);
 
@@ -433,6 +511,16 @@
         (n < 0 ? 'passed' : n + ' day' + (n === 1 ? '' : 's')) + '</span>';
   }
 
+  // One radio holds tabindex 0 so Tab reaches the group once, then arrow keys
+  // move inside it, which is what the radiogroup pattern expects.
+  function markSeg(seg, value) {
+    seg.querySelectorAll('button').forEach(function (b) {
+      var on = b.dataset.val === value;
+      b.setAttribute('aria-checked', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+  }
+
   function syncLogoUi() {
     $('#logo-opts').hidden = state.logoMode === 'none';
     $('#markrow').hidden = state.logoMode !== 'mark';
@@ -442,9 +530,7 @@
 
   function forceEcH() {
     state.ec = 'H';
-    $$('.seg.ec button').forEach(function (b) {
-      b.setAttribute('aria-pressed', String(b.dataset.val === 'H'));
-    });
+    markSeg($('.seg.ec'), 'H');
   }
 
   // ---- payload and options ------------------------------------------------
@@ -626,7 +712,7 @@
   function setVerdict(sel, stateName, headline, echo) {
     var el = $(sel);
     el.dataset.state = stateName || '';
-    el.innerHTML = '<div class="headline"><span class="dot"></span>' + esc(headline) + '</div>' +
+    el.innerHTML = '<div class="headline"><span class="dot" aria-hidden="true"></span>' + esc(headline) + '</div>' +
       '<div class="echo">' + esc(echo) + '</div>';
   }
 
@@ -736,7 +822,7 @@
 
   function setNotices(list) {
     $('#notices').innerHTML = list.map(function (nt) {
-      return '<div class="notice ' + nt[0] + '"><span class="dot"></span><b>' +
+      return '<div class="notice ' + nt[0] + '"><span class="dot" aria-hidden="true"></span><b>' +
         esc(nt[1]) + '</b><span>' + esc(nt[2]) + '</span></div>';
     }).join('');
   }
@@ -825,6 +911,7 @@
 
     win.document.write(doc);
     win.document.close();
+    try { win.opener = null; } catch (e) { /* some browsers make it read-only */ }
     win.focus();
     // Give the document a beat to lay out before the dialog measures it.
     setTimeout(function () { win.print(); }, 400);
@@ -924,7 +1011,7 @@
         var good = res.ok || res.blocked || res.unavailable;
         if (res.ok) ok++; else if (!res.blocked && !res.unavailable) bad++;
         cell.className = 'bcell' + (res.ok ? '' : res.blocked || res.unavailable ? ' unknown' : ' bad');
-        cell.innerHTML = '<div class="bthumb">' +
+        cell.innerHTML = '<div class="bthumb" aria-hidden="true">' +
           R.svg(text, Object.assign({}, o, { px: 120 })) + '</div>' +
           '<div class="blab"><b>' + (res.ok ? 'Verified' : res.blocked ? 'Unchecked' : 'Failed') +
           '</b>' + esc(row.label || row.value) + '</div>';
@@ -1164,9 +1251,7 @@
 
     function pickSeg(seg, b) {
       state[seg.dataset.key] = b.dataset.val;
-      seg.querySelectorAll('button').forEach(function (x) {
-        x.setAttribute('aria-pressed', String(x === b));
-      });
+      markSeg(seg, b.dataset.val);
       if (seg.dataset.key === 'logoMode') {
         syncLogoUi();
         if (state.logoMode !== 'none') forceEcH();
@@ -1176,13 +1261,29 @@
 
     // colours
     [['#fg', 'fg'], ['#bg', 'bg'], ['#gradfrom', 'gradFrom'], ['#gradto', 'gradTo'],
-     ['#eyecolor', 'eyeColor'], ['#framefill', 'frameFill'], ['#frametextcolor', 'frameTextColor']
-    ].forEach(function (p) {
-      $(p[0]).addEventListener('input', function (e) {
-        state[p[1]] = e.target.value;
-        $(p[0] + '-val').textContent = e.target.value;
+     ['#eyecolor', 'eyeColor'], ['#framefill', 'frameFill'], ['#frametextcolor', 'frameTextColor'],
+     ['#markcolor', 'markColor']
+    ].forEach(function (pair) {
+      var picker = $(pair[0]), hex = $(pair[0] + '-val'), key = pair[1];
+
+      picker.addEventListener('input', function (e) {
+        state[key] = colour(e.target.value, state[key]);
+        hex.value = state[key];
         syncSummaries(); render();
       });
+
+      // Typing a hex is how brand values actually arrive. Anything invalid is
+      // left alone until it parses, so the field never fights the typist.
+      hex.addEventListener('input', function (e) {
+        var v = e.target.value.trim();
+        if (v && v[0] !== '#') { v = '#' + v; e.target.value = v; }
+        var c = colour(v, null);
+        if (!c) return;
+        state[key] = c;
+        picker.value = c;
+        syncSummaries(); render();
+      });
+      hex.addEventListener('blur', function () { hex.value = state[key]; });
     });
 
     // toggles
@@ -1218,12 +1319,6 @@
       if (!b) return;
       state.logoMark = b.dataset.mark;
       renderMarkVars(); syncLogoUi(); syncSummaries(); render();
-    });
-
-    $('#markcolor').addEventListener('input', function (e) {
-      state.markColor = e.target.value;
-      $('#markcolor-val').textContent = e.target.value;
-      syncSummaries(); render();
     });
 
     $('#expiry').addEventListener('input', function (e) {
@@ -1308,6 +1403,20 @@
       navigator.clipboard.writeText(url)
         .then(function () { flash('#share', 'Link copied'); })
         .catch(function () { flash('#share', 'Link is in the address bar'); });
+    });
+
+    $('#reset').addEventListener('click', function () {
+      // Keeps the theme and saved styles; clears the design, the payload and
+      // any restored link.
+      var fresh = defaults();
+      Object.keys(fresh).forEach(function (k) { state[k] = fresh[k]; });
+      state.data = fresh.data;
+      history.replaceState(null, '', location.pathname);
+      $('#suggest').hidden = true; pendingSwitch = null;
+      $('#dropmsg').textContent = 'Drop an image here, or click to choose';
+      renderTypes(); renderFields(); syncControls(); render();
+      flash('#reset', 'Reset');
+      $('#quick').focus();
     });
 
     // theme

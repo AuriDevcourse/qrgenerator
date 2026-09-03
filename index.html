@@ -33,7 +33,8 @@
         <h1>Quiet Zone</h1>
         <span class="chip">ISO/IEC 18004</span>
         <span class="grow"></span>
-        <button type="button" class="btn outline" id="share" title="Copy a link that restores this exact design">Copy link</button>
+        <button type="button" class="btn outline" id="reset" title="Clear everything back to the defaults">Reset</button>
+      <button type="button" class="btn outline" id="share" title="Copy a link that restores this exact design">Copy link</button>
         <button type="button" class="btn outline iconbtn" id="theme" aria-label="Switch to light theme" title="Switch theme">
           <span id="theme-icon" aria-hidden="true">&#9680;</span>
         </button>
@@ -58,10 +59,11 @@
 
     <!-- the fast path: land, paste, done -->
     <div class="quickbar">
+      <label class="quicklabel" for="quick">What should the code contain?</label>
       <div class="quickfield">
         <input type="text" id="quick" autocomplete="off" spellcheck="false"
                placeholder="Paste a link, email, phone number, Wi-Fi&hellip;"
-               aria-label="What the code should contain">
+              >
         <button type="button" class="btn outline" id="quickpaste">Paste</button>
       </div>
       <div class="suggest" id="suggest" role="status" aria-live="polite" hidden></div>
@@ -94,19 +96,19 @@
         <p class="eyebrow">Customise</p>
 
         <details class="group">
-          <summary>Colour <span class="sumdots" id="sum-colour"></span></summary>
+          <summary>Colour <span class="sumdots" aria-hidden="true" id="sum-colour"></span></summary>
           <div class="groupbody">
             <div class="chips" id="colorchips"></div>
 
             <div class="swatchrow">
               <label for="fg">Modules <span class="what">the squares that carry the data</span></label>
               <span class="swatch"><input type="color" id="fg" value="#ce0f2e"></span>
-              <span class="swatch-val" id="fg-val">#ce0f2e</span>
+              <input type="text" class="swatch-val" id="fg-val" value="#ce0f2e" aria-label="Module colour as a hex value" maxlength="7" spellcheck="false" autocomplete="off">
             </div>
             <div class="swatchrow">
               <label for="bg">Background <span class="what">behind the squares, including the quiet zone</span></label>
               <span class="swatch"><input type="color" id="bg" value="#ffffff"></span>
-              <span class="swatch-val" id="bg-val">#ffffff</span>
+              <input type="text" class="swatch-val" id="bg-val" value="#ffffff" aria-label="Background colour as a hex value" maxlength="7" spellcheck="false" autocomplete="off">
             </div>
             <p class="hint">Scanners expect dark modules on a light background.</p>
 
@@ -115,12 +117,12 @@
               <div class="swatchrow">
                 <label for="gradfrom">Fade from <span class="what">top-left end of the fade</span></label>
                 <span class="swatch"><input type="color" id="gradfrom" value="#fa7000"></span>
-                <span class="swatch-val" id="gradfrom-val">#fa7000</span>
+                <input type="text" class="swatch-val" id="gradfrom-val" value="#fa7000" aria-label="Fade start colour as a hex value" maxlength="7" spellcheck="false" autocomplete="off">
               </div>
               <div class="swatchrow">
                 <label for="gradto">Fade to <span class="what">bottom-right end of the fade</span></label>
                 <span class="swatch"><input type="color" id="gradto" value="#ce0f2e"></span>
-                <span class="swatch-val" id="gradto-val">#ce0f2e</span>
+                <input type="text" class="swatch-val" id="gradto-val" value="#ce0f2e" aria-label="Fade end colour as a hex value" maxlength="7" spellcheck="false" autocomplete="off">
               </div>
               <div class="range">
                 <div class="row"><label for="gradangle">Fade direction</label><output id="gradangle-val">120&deg;</output></div>
@@ -133,7 +135,7 @@
               <div class="swatchrow">
                 <label for="eyecolor">Corner squares <span class="what">the three big finder squares</span></label>
                 <span class="swatch"><input type="color" id="eyecolor" value="#0d0d0d"></span>
-                <span class="swatch-val" id="eyecolor-val">#0d0d0d</span>
+                <input type="text" class="swatch-val" id="eyecolor-val" value="#0d0d0d" aria-label="Corner square colour as a hex value" maxlength="7" spellcheck="false" autocomplete="off">
               </div>
             </div>
           </div>
@@ -146,27 +148,27 @@
               <div class="field">
                 <label id="lbl-style">Module shape</label>
                 <div class="seg" data-key="style" role="radiogroup" aria-labelledby="lbl-style">
-                  <button type="button" data-val="square" aria-pressed="false">Square</button>
-                  <button type="button" data-val="rounded" aria-pressed="true">Rounded</button>
-                  <button type="button" data-val="dots" aria-pressed="false">Dots</button>
+                  <button type="button" data-val="square" role="radio" aria-checked="false" tabindex="-1">Square</button>
+                  <button type="button" data-val="rounded" role="radio" aria-checked="true" tabindex="0">Rounded</button>
+                  <button type="button" data-val="dots" role="radio" aria-checked="false" tabindex="-1">Dots</button>
                 </div>
                 <span class="hint">Decoders find the grid by the corner, timing and alignment patterns, so those stay square.</span>
               </div>
               <div class="field">
                 <label id="lbl-eyes">Corner eyes</label>
                 <div class="seg" data-key="eyeStyle" role="radiogroup" aria-labelledby="lbl-eyes">
-                  <button type="button" data-val="square" aria-pressed="false">Square</button>
-                  <button type="button" data-val="rounded" aria-pressed="true">Rounded</button>
-                  <button type="button" data-val="circle" aria-pressed="false">Circle</button>
+                  <button type="button" data-val="square" role="radio" aria-checked="false" tabindex="-1">Square</button>
+                  <button type="button" data-val="rounded" role="radio" aria-checked="true" tabindex="0">Rounded</button>
+                  <button type="button" data-val="circle" role="radio" aria-checked="false" tabindex="-1">Circle</button>
                 </div>
               </div>
               <div class="field">
                 <label id="lbl-ec">Error correction</label>
                 <div class="seg ec" data-key="ec" role="radiogroup" aria-labelledby="lbl-ec">
-                  <button type="button" data-val="L" aria-pressed="false">L 7%</button>
-                  <button type="button" data-val="M" aria-pressed="true">M 15%</button>
-                  <button type="button" data-val="Q" aria-pressed="false">Q 25%</button>
-                  <button type="button" data-val="H" aria-pressed="false">H 30%</button>
+                  <button type="button" data-val="L" role="radio" aria-checked="false" tabindex="-1">L 7%</button>
+                  <button type="button" data-val="M" role="radio" aria-checked="true" tabindex="0">M 15%</button>
+                  <button type="button" data-val="Q" role="radio" aria-checked="false" tabindex="-1">Q 25%</button>
+                  <button type="button" data-val="H" role="radio" aria-checked="false" tabindex="-1">H 30%</button>
                 </div>
                 <span class="hint">How much of the code can be smudged, torn or covered and still scan.</span>
               </div>
@@ -180,13 +182,13 @@
         </details>
 
         <details class="group">
-          <summary>Centre mark <span class="sumdots" id="sum-mark"></span></summary>
+          <summary>Centre mark <span class="sumdots" aria-hidden="true" id="sum-mark"></span></summary>
           <div class="groupbody">
             <div class="field">
               <div class="seg" data-key="logoMode" role="radiogroup" aria-label="Centre mark source">
-                <button type="button" data-val="none" aria-pressed="true">None</button>
-                <button type="button" data-val="mark" aria-pressed="false">TechBBQ mark</button>
-                <button type="button" data-val="custom" aria-pressed="false">Your image</button>
+                <button type="button" data-val="none" role="radio" aria-checked="true" tabindex="0">None</button>
+                <button type="button" data-val="mark" role="radio" aria-checked="false" tabindex="-1">TechBBQ mark</button>
+                <button type="button" data-val="custom" role="radio" aria-checked="false" tabindex="-1">Your image</button>
               </div>
               <div class="logo-opts" id="logo-opts" hidden>
                 <div id="markrow" hidden>
@@ -195,7 +197,7 @@
                   <div class="swatchrow" id="markcolorrow" hidden>
                     <label for="markcolor">Mark colour <span class="what">any colour you like</span></label>
                     <span class="swatch"><input type="color" id="markcolor" value="#10c8a7"></span>
-                    <span class="swatch-val" id="markcolor-val">#10c8a7</span>
+                    <input type="text" class="swatch-val" id="markcolor-val" value="#10c8a7" aria-label="Mark colour as a hex value" maxlength="7" spellcheck="false" autocomplete="off">
                   </div>
                 </div>
                 <div id="uploadrow" hidden>
@@ -215,7 +217,7 @@
         </details>
 
         <details class="group">
-          <summary>Caption frame <span class="sumdots" id="sum-frame"></span></summary>
+          <summary>Caption frame <span class="sumdots" aria-hidden="true" id="sum-frame"></span></summary>
           <div class="groupbody">
             <div class="field">
               <label class="check"><input type="checkbox" id="frameon"> Add a caption frame</label>
@@ -228,12 +230,12 @@
                   <div class="swatchrow">
                     <label for="framefill">Frame <span class="what">the band around and under the code</span></label>
                     <span class="swatch"><input type="color" id="framefill" value="#ce0f2e"></span>
-                    <span class="swatch-val" id="framefill-val">#ce0f2e</span>
+                    <input type="text" class="swatch-val" id="framefill-val" value="#ce0f2e" aria-label="Frame colour as a hex value" maxlength="7" spellcheck="false" autocomplete="off">
                   </div>
                   <div class="swatchrow">
                     <label for="frametextcolor">Caption text <span class="what">the words in the band</span></label>
                     <span class="swatch"><input type="color" id="frametextcolor" value="#ffffff"></span>
-                    <span class="swatch-val" id="frametextcolor-val">#ffffff</span>
+                    <input type="text" class="swatch-val" id="frametextcolor-val" value="#ffffff" aria-label="Caption text colour as a hex value" maxlength="7" spellcheck="false" autocomplete="off">
                   </div>
                 </div>
               </div>
@@ -242,7 +244,7 @@
         </details>
 
         <details class="group">
-          <summary>Expiry <span class="sumdots" id="sum-expiry"></span></summary>
+          <summary>Expiry <span class="sumdots" aria-hidden="true" id="sum-expiry"></span></summary>
           <div class="groupbody">
             <div class="callout">
               <b>A QR code cannot expire by itself.</b>
@@ -396,7 +398,7 @@ techbbq.org/a/bob, Bob"></textarea>
       <div class="panel">
         <div class="card stage">
           <div class="videowrap">
-            <video id="cam" playsinline muted></video>
+            <video id="cam" playsinline muted aria-label="Live camera view for reading a printed code"></video>
             <div class="camidle" id="camidle">Camera off</div>
           </div>
           <div class="verdict" id="camverdict" role="status" aria-live="polite"></div>

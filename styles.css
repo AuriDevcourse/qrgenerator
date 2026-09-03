@@ -323,7 +323,7 @@ section.block { margin-bottom: 30px }
   transition: background-color .14s, color .14s;
 }
 .seg button:hover { color: var(--foreground) }
-.seg button[aria-pressed="true"] { background: var(--pill-on-bg); color: var(--pill-on-ink) }
+.seg button[aria-checked="true"] { background: var(--pill-on-bg); color: var(--pill-on-ink) }
 .seg.ec button { font-variant-numeric: tabular-nums }
 
 /* colours */
@@ -794,3 +794,19 @@ details.group > summary { justify-content: flex-start }
 
 /* keep a number and its unit together, away from the label */
 .printrow .val { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap }
+
+
+/* ---- typeable hex fields ------------------------------------------------ */
+input.swatch-val {
+  width: 78px; height: 30px; padding: 0 8px; text-align: right;
+  background: var(--card); color: var(--muted);
+  border: 1px solid var(--field-line); border-radius: var(--radius-sm);
+  font: 400 12px var(--font-data); text-transform: lowercase;
+}
+input.swatch-val:focus { border-color: var(--foreground); color: var(--foreground); outline: none }
+
+/* ---- visible label above the omnibox ----------------------------------- */
+.quicklabel {
+  display: block; margin-bottom: 2px;
+  font: 500 13px var(--font-body); color: var(--foreground);
+}

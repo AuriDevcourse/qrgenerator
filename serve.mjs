@@ -11,7 +11,7 @@
  */
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname);
 const PORT = Number(process.argv[2]) || 8777;
@@ -39,7 +39,7 @@ const server = createServer(async (req, res) => {
 
     // Keep requests inside ROOT: normalize first, then confirm the prefix.
     const file = join(ROOT, normalize(path).replace(/^(\.\.[/\\])+/, ''));
-    if (!file.startsWith(ROOT)) {
+    if (file !== ROOT && !file.startsWith(ROOT + sep)) {
       res.writeHead(403).end('Forbidden');
       return;
     }
@@ -50,7 +50,8 @@ const server = createServer(async (req, res) => {
 
     res.writeHead(200, {
       'Content-Type': TYPES[extname(target)] || 'application/octet-stream',
-      'Cache-Control': 'no-store'
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff'
     });
     res.end(await readFile(target));
   } catch {

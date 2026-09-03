@@ -177,6 +177,24 @@ Codes default to founder red on white, which measures 5.63:1 and puts dark
 modules on a light ground, the orientation scanners expect. Light-on-dark is
 available and the app flags it.
 
+## Security notes
+
+- **A shared link is untrusted.** Everything a `#`-link carries is whitelisted
+  or coerced before it reaches state: enums checked, numbers clamped, colours
+  matched against `#rgb` / `#rrggbb`, strings capped. An earlier version let a
+  crafted link put markup into a colour value and run it.
+- **The renderer escapes every SVG attribute it writes**, so no option can break
+  out of one even if a caller skipped its own checks.
+- **The built page pins its inline scripts by CSP hash** (`build.mjs` computes
+  them), with `default-src 'none'` and no remote script origins. `style-src`
+  keeps `'unsafe-inline'` because the page sets style attributes from script;
+  those values are validated colours.
+- **`serve.mjs` resolves every request inside its own directory** and sends
+  `X-Content-Type-Options: nosniff`. `vercel.json` adds `frame-ancestors 'none'`,
+  a referrer policy and a permissions policy that allows the camera only to
+  this origin.
+- Nothing is uploaded. Saved styles and recents live in `localStorage`.
+
 ## Files
 
 | File | |
