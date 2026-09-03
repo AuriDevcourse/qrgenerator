@@ -33,6 +33,13 @@ a phone number, coordinates, a `WIFI:` string or a whole vCard, and it works out
 which one you gave it and fills the right fields. A Wi-Fi string arrives as
 network, password and security rather than raw text.
 
+Upload your own mark and it is read for you: the app finds the colour the image
+is mostly made of, offers to match the code to it, and says whether the mark will
+disappear into the background. If matching would drop the code under the 3:1 a
+camera needs, it says so and the button changes to "Match anyway" rather than
+handing you a code that will not scan. A plate sits behind the mark for the case
+that needs one, and clear space around it is adjustable.
+
 Every colour control names what it changes: modules are "the squares that carry
 the data", background is "behind the squares, including the quiet zone". Closed
 groups show their current colours as swatches in the header, so you can see the

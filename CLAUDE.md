@@ -117,6 +117,19 @@ back. `verify.html` and the code comments keep the spec terms; the UI does not.
 One accuracy note: the capacity label says **bytes**, not characters. Danish
 `æ` costs two, so "characters" would be wrong.
 
+## Uploaded marks
+
+`inspectLogo()` samples the image at 40x40, buckets colours 32 per channel and
+returns the biggest bucket plus mean luminance. Transparent pixels are skipped,
+or a PNG with a clear background reports as mid-grey.
+
+- **A plate only does something in a colour other than the background.** The
+  window modules are already blanked, so a plate in the background colour is
+  invisible. It exists for dark artwork on a dark ground.
+- **Warn before the click, not after.** Matching the code to a logo colour can
+  drop it under 3:1. The panel states the ratio and the button becomes "Match
+  anyway"; it used to apply the colour and let the verdict fail afterwards.
+
 ## The build guard exists for a reason
 
 `build.mjs` compares the `<script src="./...">` tags in `index.html` against its

@@ -239,9 +239,9 @@
   // Fit a mark's viewBox into the blanked centre window, preserving aspect ratio.
   var markUid = 0;
 
-  function markMarkup(mark, win, margin, customFill) {
+  function markMarkup(mark, win, margin, customFill, pad) {
     var span = win.c1 - win.c0 + 1;
-    var pad = 0.6;                       // keep the mark off the live modules
+    if (pad == null) pad = 0.6;          // keep the mark off the live modules
     var side = span - pad * 2;
     var vb = String(mark.viewBox).split(/\s+/).map(Number);
     var vbW = vb[2], vbH = vb[3];
@@ -348,14 +348,26 @@
     if (p.eyes) body += '<path fill-rule="evenodd" d="' + p.eyes + '" fill="' + attr(eyeFill) + '"/>';
     if (opts.logoPct) {
       var win = logoWindow(m.size, opts.logoPct);
+      var span = win.c1 - win.c0 + 1;
+      var wx = win.c0 + margin, wy = win.r0 + margin;
+      var pad = opts.logoPad == null ? 0.5 : Math.max(0, Math.min(2, opts.logoPad));
+
+      // A plate matters when the code's own background would swallow the mark:
+      // dark artwork on a dark ground disappears otherwise. The window modules
+      // are already blanked, so a plate in the background colour is invisible
+      // and only a different colour does anything.
+      if (opts.logoPlate) {
+        body += '<rect x="' + n(wx) + '" y="' + n(wy) + '" width="' + n(span) +
+          '" height="' + n(span) + '" rx="' + n(Math.min(span / 2, 1.2)) +
+          '" fill="' + attr(opts.logoPlateColor || '#ffffff') + '"/>';
+      }
+
       if (opts.logoMark && MARKS[opts.logoMark]) {
-        body += markMarkup(MARKS[opts.logoMark], win, margin, opts.markColor);
+        body += markMarkup(MARKS[opts.logoMark], win, margin, opts.markColor, pad + 0.1);
       } else if (opts.logoHref) {
-        var span = win.c1 - win.c0 + 1;
-        var lp = 0.5;
-        body += '<image href="' + attr(opts.logoHref) + '" x="' + n(win.c0 + margin + lp) +
-          '" y="' + n(win.r0 + margin + lp) + '" width="' + n(span - lp * 2) +
-          '" height="' + n(span - lp * 2) + '" preserveAspectRatio="xMidYMid meet"/>';
+        body += '<image href="' + attr(opts.logoHref) + '" x="' + n(wx + pad) +
+          '" y="' + n(wy + pad) + '" width="' + n(span - pad * 2) +
+          '" height="' + n(span - pad * 2) + '" preserveAspectRatio="xMidYMid meet"/>';
       }
     }
 

@@ -228,7 +228,26 @@
                     <span id="dropmsg">Drop an image here, or click to choose</span>
                     <input type="file" id="logofile" accept="image/*" hidden>
                   </div>
+                  <div class="logofound" id="logofound" hidden>
+                    <span class="sumdot" id="logoswatch" aria-hidden="true"></span>
+                    <span id="logofoundtext"></span>
+                    <button type="button" class="btn outline" id="uselogocolour">Match the code to it</button>
+                  </div>
                 </div>
+                <label class="check topgap"><input type="checkbox" id="logoplate"> Put a plate behind it</label>
+                <div id="plateopts" hidden>
+                  <div class="swatchrow">
+                    <label for="logoplatecolor">Plate <span class="what">use this when the mark would vanish into the background</span></label>
+                    <span class="swatch"><input type="color" id="logoplatecolor" value="#ffffff"></span>
+                    <input type="text" class="swatch-val" id="logoplatecolor-val" value="#ffffff" aria-label="Plate colour as a hex value" maxlength="7" spellcheck="false" autocomplete="off">
+                  </div>
+                </div>
+
+                <div class="range topgap">
+                  <div class="row"><label for="logopad">Clear space around it</label><output id="logopad-val">0.5</output></div>
+                  <input type="range" id="logopad" min="0" max="2" step="0.1" value="0.5">
+                </div>
+
                 <div class="range">
                   <div class="row"><label for="logopct">Mark size</label><output id="logopct-val">20%</output></div>
                   <input type="range" id="logopct" min="8" max="35" step="1" value="20">

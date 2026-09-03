@@ -74,6 +74,7 @@
       logoMode: 'none', logoMark: 'tbbq-gradient', logoHref: null, logoPct: 0.2,
       frameOn: false, frameText: 'SCAN ME', frameFill: '#ce0f2e', frameTextColor: '#ffffff',
       markColor: '#10c8a7',
+      logoPlate: false, logoPlateColor: '#ffffff', logoPad: 0.5,
       expiry: '', expiryInLink: false,
       distanceCm: 30
     };
@@ -86,6 +87,7 @@
   var STYLE_KEYS = ['ec', 'style', 'eyeStyle', 'margin', 'fg', 'bg',
     'gradOn', 'gradFrom', 'gradTo', 'gradAngle', 'eyeOn', 'eyeColor',
     'logoMode', 'logoMark', 'logoPct', 'markColor',
+    'logoPlate', 'logoPlateColor', 'logoPad',
     'frameOn', 'frameText', 'frameFill', 'frameTextColor'];
 
   var BUILTIN_PRESETS = [
@@ -176,8 +178,8 @@
     logoMode: ['none', 'mark', 'custom']
   };
   var COLOUR_KEYS = ['fg', 'bg', 'gradFrom', 'gradTo', 'eyeColor',
-    'frameFill', 'frameTextColor', 'markColor'];
-  var BOOL_KEYS = ['gradOn', 'eyeOn', 'frameOn'];
+    'frameFill', 'frameTextColor', 'markColor', 'logoPlateColor'];
+  var BOOL_KEYS = ['gradOn', 'eyeOn', 'frameOn', 'logoPlate'];
 
   // #rgb or #rrggbb only. Named colours and CSS functions are rejected: they
   // are the opening for style-attribute injection and nothing here needs them.
@@ -208,6 +210,7 @@
     if (raw.margin !== undefined) out.margin = Math.round(clampNum(raw.margin, 0, 8, base.margin));
     if (raw.gradAngle !== undefined) out.gradAngle = Math.round(clampNum(raw.gradAngle, 0, 359, base.gradAngle));
     if (raw.logoPct !== undefined) out.logoPct = clampNum(raw.logoPct, 0.08, 0.35, base.logoPct);
+    if (raw.logoPad !== undefined) out.logoPad = clampNum(raw.logoPad, 0, 2, base.logoPad);
     if (Object.prototype.hasOwnProperty.call(R.MARKS, raw.logoMark)) out.logoMark = raw.logoMark;
     if (typeof raw.frameText === 'string') out.frameText = raw.frameText.slice(0, 40);
     return out;
@@ -478,6 +481,12 @@
     $('#expiry').value = state.expiry;
     $('#expiryinlink').checked = state.expiryInLink;
     $('#expiryinfo').textContent = expiryLabel();
+    $('#logoplate').checked = state.logoPlate;
+    $('#plateopts').hidden = !state.logoPlate;
+    $('#logoplatecolor').value = state.logoPlateColor;
+    $('#logoplatecolor-val').value = state.logoPlateColor;
+    $('#logopad').value = state.logoPad;
+    $('#logopad-val').value = Number(state.logoPad).toFixed(1);
     syncSummaries();
   }
 
@@ -584,6 +593,9 @@
       logoPct: on ? st.logoPct : 0,
       logoMark: markOn ? st.logoMark : null,
       markColor: st.markColor,
+      logoPlate: on && st.logoPlate,
+      logoPlateColor: st.logoPlateColor,
+      logoPad: st.logoPad,
       logoHref: customOn ? logoHref : null,
       frame: st.frameOn
         ? { text: st.frameText, fill: st.frameFill, textColor: st.frameTextColor }
@@ -724,6 +736,86 @@
     if (past.at >= past.stack.length - 1) return;
     past.at++;
     restore(past.stack[past.at]);
+  }
+
+  // ---- reading an uploaded mark -------------------------------------------
+  //
+  // Samples the image to find the colour it is mostly made of, so the code can
+  // be matched to a logo in one click, and to say whether the mark will vanish
+  // into the current background.
+
+  function inspectLogo(href) {
+    return new Promise(function (res) {
+      var img = new Image();
+      img.onload = function () {
+        var n = 40;
+        var cv = document.createElement('canvas');
+        cv.width = cv.height = n;
+        var ctx = cv.getContext('2d');
+        ctx.drawImage(img, 0, 0, n, n);
+        var px;
+        try { px = ctx.getImageData(0, 0, n, n).data; }
+        catch (e) { return res(null); }
+
+        // Buckets of 32 per channel: enough to group a brand colour together
+        // without merging two different ones.
+        var bins = {}, lumSum = 0, seen = 0;
+        for (var i = 0; i < px.length; i += 4) {
+          if (px[i + 3] < 128) continue;                 // ignore transparency
+          var r = px[i], g = px[i + 1], b = px[i + 2];
+          var key = (r >> 5) + ',' + (g >> 5) + ',' + (b >> 5);
+          bins[key] = bins[key] || { n: 0, r: 0, g: 0, b: 0 };
+          bins[key].n++; bins[key].r += r; bins[key].g += g; bins[key].b += b;
+          lumSum += 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          seen++;
+        }
+        if (!seen) return res(null);
+
+        var best = null;
+        Object.keys(bins).forEach(function (k) {
+          if (!best || bins[k].n > best.n) best = bins[k];
+        });
+        var hex = '#' + [best.r, best.g, best.b].map(function (sum) {
+          return ('0' + Math.round(sum / best.n).toString(16)).slice(-2);
+        }).join('');
+
+        res({ colour: hex, luminance: lumSum / seen / 255, coverage: best.n / seen });
+      };
+      img.onerror = function () { res(null); };
+      img.src = href;
+    });
+  }
+
+  var logoInfo = null;
+
+  function showLogoInfo() {
+    var box = $('#logofound');
+    if (!logoInfo) { box.hidden = true; return; }
+    box.hidden = false;
+    $('#logoswatch').style.background = logoInfo.colour;
+
+    var behind = state.logoPlate ? state.logoPlateColor : state.bg;
+    var visible = R.contrast(logoInfo.colour, behind);
+    // What the code would measure if these modules took the logo's colour.
+    var asModules = R.contrast(logoInfo.colour, state.bg);
+
+    var text = 'Mostly ' + logoInfo.colour + '. ';
+    text += visible < 1.6
+      ? 'That is close to what sits behind it, so it will be hard to see. Try a plate.'
+      : 'It stands out from the background.';
+
+    var btn = $('#uselogocolour');
+    if (asModules < 3) {
+      // Say this before the click, not after the code stops scanning.
+      text += ' Using it for the modules would give ' + asModules.toFixed(1) +
+        ':1 against the background, under the 3:1 a camera needs.';
+      btn.textContent = 'Match anyway';
+      btn.classList.add('risky');
+    } else {
+      btn.textContent = 'Match the code to it';
+      btn.classList.remove('risky');
+    }
+    $('#logofoundtext').textContent = text;
   }
 
   // ---- damage tolerance ---------------------------------------------------
@@ -1748,6 +1840,38 @@
       renderMarkVars(); syncLogoUi(); syncSummaries(); render();
     });
 
+    $('#uselogocolour').addEventListener('click', function () {
+      if (!logoInfo) return;
+      state.fg = logoInfo.colour;
+      state.gradOn = false;
+      syncControls(); render(); showLogoInfo();
+    });
+
+    $('#logoplate').addEventListener('change', function (e) {
+      state.logoPlate = e.target.checked;
+      $('#plateopts').hidden = !e.target.checked;
+      showLogoInfo(); syncSummaries(); render();
+    });
+    $('#logoplatecolor').addEventListener('input', function (e) {
+      state.logoPlateColor = colour(e.target.value, state.logoPlateColor);
+      $('#logoplatecolor-val').value = state.logoPlateColor;
+      showLogoInfo(); render();
+    });
+    $('#logoplatecolor-val').addEventListener('input', function (e) {
+      var v = e.target.value.trim();
+      if (v && v[0] !== '#') { v = '#' + v; e.target.value = v; }
+      var c = colour(v, null);
+      if (!c) return;
+      state.logoPlateColor = c;
+      $('#logoplatecolor').value = c;
+      showLogoInfo(); render();
+    });
+    $('#logopad').addEventListener('input', function (e) {
+      state.logoPad = +e.target.value;
+      $('#logopad-val').value = state.logoPad.toFixed(1);
+      render();
+    });
+
     $('#expiry').addEventListener('input', function (e) {
       state.expiry = e.target.value;
       $('#expiryinfo').textContent = expiryLabel();
@@ -1789,7 +1913,12 @@
       fr.onload = function () {
         state.logoHref = fr.result;
         $('#dropmsg').textContent = f.name;
-        forceEcH(); render();
+        forceEcH();
+        inspectLogo(fr.result).then(function (info) {
+          logoInfo = info;
+          showLogoInfo();
+        });
+        render();
       };
       fr.readAsDataURL(f);
     }
