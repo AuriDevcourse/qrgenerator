@@ -1,16 +1,26 @@
 # Quiet Zone — QR code generator
 
-Live: https://claude.ai/code/artifact/80c7d42b-fa98-405b-b4c3-b79afa1f61d3
-
 A QR generator that **decodes its own output** before showing you the result, so an
-unscannable code fails here instead of on a printed banner.
+unscannable code fails on screen instead of on a printed banner.
+
+Runs locally. No build step to use it, no dependencies to install, no account.
 
 ```
-npm start          # serve locally on :8777  (or: python3 -m http.server 8777)
-npm test           # open verify.html — 30-case render + decode suite
-npm run build      # inline everything into dist/quiet-zone.html
-node batch.mjs people.csv --col url --name-col name --out ./out
+npm start          # http://127.0.0.1:8777  — the app
+                   # http://127.0.0.1:8777/verify.html — the 37-case decode suite
+npm run build      # bundle into one standalone dist/quiet-zone.html
+npm run batch -- people.csv --col url --name-col name --out ./out
 ```
+
+**A local server is required, not optional.** The scan check draws the generated
+SVG to a canvas and reads the pixels back; on a `file://` URL the canvas is
+tainted and that read is blocked. `npm start` runs a zero-dependency Node static
+server (`serve.mjs`) — nothing to `npm install`. Opened as a plain file the
+generator still works, but it says the scan check is unavailable rather than
+pretending it verified anything.
+
+The only network request the app makes is the Google Fonts stylesheet; without it
+the type falls back to the system sans stack. Encoder and decoder are vendored.
 
 ---
 
@@ -123,8 +133,10 @@ Light-on-dark is available but the app flags it.
 | `verify.html` | 30-case suite: renders, rasterises, re-decodes, reports |
 | `probe.html` | geometry sweeps — how the numbers above were found |
 | `batch.mjs` | CSV → one SVG per row |
-| `build.mjs` | inlines everything into `dist/` for publishing |
+| `build.mjs` | bundles everything into one standalone `dist/quiet-zone.html` |
+| `serve.mjs` | zero-dependency static server for local use |
 | `vendor/qrcode.js` | the encoder (MIT, Kazuhiko Arase) |
+| `vendor/jsqr.js` | the decoder used by the scan check (Apache-2.0, jsQR) |
 
 `verify.html` and `probe.html` need a server, not `file://` — blob URLs and canvas
 `getImageData` are blocked on the file protocol.

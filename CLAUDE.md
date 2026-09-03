@@ -8,10 +8,15 @@ QR code generator that verifies its own output. Vanilla JS, no framework.
   `"type": "module"` to `package.json` — it breaks the renderer and `batch.mjs`.
   `build.mjs` / `batch.mjs` are `.mjs`, so they are ESM by extension already.
 - **`dist/` is generated.** Edit `index.html` / `app.js` / `styles.css`, then
-  `npm run build`. Never hand-edit `dist/quiet-zone.html`.
-- **Verify before publishing.** `npm start`, open `/verify.html`, and require
-  **0 fail**. Expected-fails (`xfail` / `risky` cases) are fine. `verify.html` and
-  `probe.html` need a server — blob URLs and `getImageData` are blocked on `file://`.
+  `npm run build`, which bundles them into one standalone `dist/quiet-zone.html`.
+  Never hand-edit that file.
+- **A server is required to run anything.** `npm start` (`serve.mjs`, zero deps).
+  The scan check reads canvas pixels back, which `file://` forbids — the app
+  degrades to "scan check unavailable" there rather than claiming a false pass.
+- **Verify before committing.** Open `/verify.html` and require **0 fail**.
+  Expected-fails (`xfail` / `risky` cases) are fine.
+- **Encoder and decoder are vendored** in `vendor/`. Keep them local — the point
+  of the project is that it works without a network.
 - **Styling follows the TechBBQ design system** at
   `~/Documents/GitHub/tdesignsystem` (branch `feat/design-system`). Tokens:
   `app/globals.css` + `public/brand/tokens.json`. Components: `components/ui/`.

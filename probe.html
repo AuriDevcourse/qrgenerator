@@ -1,7 +1,7 @@
 <!doctype html><meta charset="utf-8"><title>probe</title>
 <script src="./vendor/qrcode.js"></script>
 <script src="./qr-render.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="./vendor/jsqr.js"></script>
 <body style="font:12px ui-monospace,monospace"><pre id="log"></pre><script>
 const log=m=>document.getElementById('log').textContent+=m+'\n';
 function raster(sv,px){return new Promise((res,rej)=>{const i=new Image();

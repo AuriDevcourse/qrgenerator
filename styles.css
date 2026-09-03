@@ -257,7 +257,6 @@ input[type="file"] { font: 400 12px var(--font-body); color: var(--muted); max-w
   width: 100%; max-width: 260px; height: auto; display: block;
   border-radius: var(--radius-md);
 }
-.stage .savehint { font-size: 12px; color: var(--muted); text-align: center; margin: 0 }
 
 /* verdict — Tag pattern: coloured dot + uppercase label, state in the rule */
 .verdict {

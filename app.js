@@ -237,10 +237,24 @@
       $('#preview').src = lastPngUrl;
       $('#preview').alt = 'QR code encoding: ' + text.slice(0, 80);
 
-      var got = window.jsQR ? window.jsQR(ctx.getImageData(0, 0, px, px).data, px, px) : null;
       if (!window.jsQR) {
-        setVerdict('warn', 'Scan check unavailable', 'The decoder did not load, so this code has not been verified.');
-      } else if (got && got.data === text) {
+        setVerdict('warn', 'Scan check unavailable',
+          'The decoder did not load, so this code has not been verified.');
+        return;
+      }
+
+      var pixels;
+      try {
+        pixels = ctx.getImageData(0, 0, px, px).data;
+      } catch (e) {
+        // Opened over file:// — the canvas is tainted, so the pixels cannot be read back.
+        setVerdict('warn', 'Scan check needs a local server',
+          'Run "npm start" and open http://127.0.0.1:8777 — reading the image back is blocked on file:// URLs. The code itself is fine.');
+        return;
+      }
+
+      var got = window.jsQR(pixels, px, px);
+      if (got && got.data === text) {
         setVerdict('ok', 'Scans correctly', got.data);
       } else if (got) {
         setVerdict('crit', 'Decoded to the wrong value', got.data);
@@ -350,9 +364,6 @@
 
   // ---- exports ------------------------------------------------------------
 
-  var embedded = window.self !== window.top;
-  var saver = null; // host-mediated file save, when the viewer's runtime grants it
-
   function filename(ext) {
     return 'qr-' + state.type + '-' + new Date().toISOString().slice(0, 10) + '.' + ext;
   }
@@ -372,41 +383,22 @@
       .catch(function () { flash('#copy-svg', 'Blocked by browser'); });
   }
 
-  // Saving goes through the host when the page is embedded — a plain <a download>
-  // is inert there. Locally the anchor is the whole mechanism.
-  function anchorSave(href, name) {
+  function saveFile(href, name) {
     var a = document.createElement('a');
     a.href = href; a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
   }
 
-  function saveFailed(sel) {
-    return function (err) {
-      flash(sel, err && err.code === 'declined' ? 'Cancelled' : 'Save failed');
-    };
-  }
-
   function savePng() {
     if (!lastPngUrl) return;
-    var name = filename('png');
-    if (!saver) return anchorSave(lastPngUrl, name);
-    fetch(lastPngUrl).then(function (r) { return r.blob(); })
-      .then(function (b) { return saver.save({ filename: name, data: b }); })
-      .then(function () { flash('#dl-png', 'Saved'); })
-      .catch(saveFailed('#dl-png'));
+    saveFile(lastPngUrl, filename('png'));
   }
 
   function saveSvg() {
     var text = payload();
     if (!text) return;
     var svg = R.svg(text, Object.assign({}, opts(), { px: 1024 }));
-    var name = filename('svg');
-    if (!saver) {
-      return anchorSave('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), name);
-    }
-    saver.save({ filename: name, data: svg })
-      .then(function () { flash('#dl-svg', 'Saved'); })
-      .catch(saveFailed('#dl-svg'));
+    saveFile('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), filename('svg'));
   }
 
   function flash(sel, msg) {
@@ -494,22 +486,6 @@
     $('#copy-svg').addEventListener('click', copySvg);
     $('#dl-png').addEventListener('click', savePng);
     $('#dl-svg').addEventListener('click', saveSvg);
-
-    if (!embedded) {
-      $('#savehint').remove();
-      return;
-    }
-    // Embedded: hide the save buttons until the host says it can take a file.
-    $('#downloads').hidden = true;
-    if (window.claude && window.claude.use) {
-      window.claude.use('downloads').then(function (d) {
-        if (!d) return;
-        saver = d;
-        $('#downloads').hidden = false;
-        var hint = $('#savehint');
-        if (hint) hint.remove();
-      }).catch(function () { /* leave the copy-only hint in place */ });
-    }
   }
 
   renderTypes();
