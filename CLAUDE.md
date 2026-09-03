@@ -2,6 +2,13 @@
 
 QR code generator that verifies its own output. Vanilla JS, no framework.
 
+## progress.md
+
+`progress.md` is the handoff log, newest first, matching the convention in Auri's
+other projects. It carries the open decisions and the measured numbers, and it is
+the place to look before trusting anything here. `CLAUDE.md` is the rules;
+`progress.md` is the history and the state.
+
 ## The name
 
 Called **QR Generator**. It was "Quiet Zone" until 2026-09-03, which is why:
