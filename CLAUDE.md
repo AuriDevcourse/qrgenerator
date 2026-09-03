@@ -84,6 +84,18 @@ is built. Keep it that way:
   and ignite orange 2.84:1, so neither gets a chip. Check with
   `R.contrast(colour, '#ffffff')` before adding one.
 
+## Plain language in the readout
+
+The readout used to be written in spec vocabulary: "Symbol: version 3", "Module
+grid", "Smallest usable print". A user told me it was unintuitive and they were
+right. It now says what things are ("29 × 29 squares", "Clear border", "Survives
+damage to") and the two print widths sit side by side with a sentence each, so
+the link between size and reading distance is visible. Do not put the jargon
+back. `verify.html` and the code comments keep the spec terms; the UI does not.
+
+One accuracy note: the capacity label says **bytes**, not characters. Danish
+`æ` costs two, so "characters" would be wrong.
+
 ## Expiry is honest, keep it that way
 
 A static QR code cannot expire, and the UI says so in the group itself. The date

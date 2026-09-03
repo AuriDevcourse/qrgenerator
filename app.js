@@ -632,37 +632,38 @@
 
   // ---- readout ------------------------------------------------------------
 
+  var EC_RECOVERY = { L: '7%', M: '15%', Q: '25%', H: '30%' };
+
   function setSpec(m, bytes, max) {
     var total = m ? m.size + state.margin * 2 : 0;
     var widthMm = total * MM_PER_MODULE;
-    $('#s-version').textContent = m ? 'version ' + m.version : '–';
-    $('#s-modules').textContent = m ? m.size + ' × ' + m.size : '–';
-    $('#s-quiet').textContent = state.margin + ' module' + (state.margin === 1 ? '' : 's');
-    $('#s-print').textContent = m ? widthMm.toFixed(1) + ' mm' : '–';
-    $('#s-reach').textContent = m ? '≈ ' + (widthMm * DISTANCE_RATIO / 10).toFixed(0) + ' cm' : '–';
-
-    var needMm = m ? (state.distanceCm * 10) / DISTANCE_RATIO : 0;
-    $('#s-need').textContent = m
-      ? needMm.toFixed(0) + ' mm · ' + Math.round(needMm / 25.4 * 300) + ' px @300dpi'
-      : '–';
-
     var exp = daysUntil(state.expiry);
+
+    // Both numbers are widths in millimetres, sat next to each other so the
+    // relationship between size and reading distance is visible.
+    $('#s-print').textContent = m ? Math.ceil(widthMm) + ' mm' : '–';
+    var needMm = m ? (state.distanceCm * 10) / DISTANCE_RATIO : 0;
+    $('#s-need').textContent = m ? Math.ceil(needMm) + ' mm' : '–';
+
+    $('#s-grid').textContent = m ? m.size + ' × ' + m.size + ' squares' : '–';
+    $('#s-border').textContent = state.margin + ' square' + (state.margin === 1 ? '' : 's');
+    $('#s-damage').textContent = EC_RECOVERY[state.ec] + ' (level ' + state.ec + ')';
     $('#s-expiry').textContent = state.expiry ? expiryLabel() : '–';
     $('#expiryinfo').textContent = expiryLabel();
-
-    // One line carries what matters at a glance; the rest is behind a toggle.
-    $('#readline').innerHTML = m
-      ? '<b>v' + m.version + '</b> · ' + m.size + '×' + m.size + ' · min <b>' +
-        widthMm.toFixed(0) + ' mm</b> · ' + bytes + '/' + max + ' bytes · EC ' + state.ec +
-        (exp === null ? '' : ' · <b' + (exp < 0 ? ' class="bad"' : '') + '>' +
-          (exp < 0 ? 'expired' : exp + 'd left') + '</b>')
-      : '&ndash;';
 
     var pct = max ? Math.min(100, bytes / max * 100) : 0;
     $('#cap').dataset.level = pct > 100 ? 'crit' : pct > 85 ? 'warn' : 'ok';
     $('#cap-fill').style.width = pct.toFixed(1) + '%';
-    $('#cap-lab-a').textContent = bytes + ' / ' + max + ' bytes';
-    $('#cap-lab-b').textContent = 'EC ' + state.ec;
+    $('#cap-lab-a').textContent = 'Room used: ' + Math.round(pct) + '%';
+    $('#cap-lab-b').textContent = bytes + ' of ' + max + ' bytes';
+
+    // The summary line reads as a sentence rather than a spec dump.
+    $('#readline').innerHTML = m
+      ? 'Print it <b>' + Math.ceil(widthMm) + ' mm</b> or wider · ' +
+        m.size + '×' + m.size + ' squares · ' + Math.round(pct) + '% full' +
+        (exp === null ? '' : ' · <b' + (exp < 0 ? ' class="bad"' : '') + '>' +
+          (exp < 0 ? 'expired' : exp + ' days left') + '</b>')
+      : '–';
   }
 
   // ---- warnings -----------------------------------------------------------

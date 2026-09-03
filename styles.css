@@ -770,3 +770,27 @@ details.group > summary { justify-content: flex-start }
 .callout b { display: block; margin-bottom: 3px; color: var(--foreground); font-weight: 600 }
 
 .readline b.bad, .spec dd .bad { color: var(--red) }
+
+/* ---- the two print widths, side by side so the link between size and
+       reading distance is obvious ---------------------------------------- */
+.sizerow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px }
+.sizebox {
+  background: var(--card-2); border-radius: var(--radius-md); padding: 11px 12px;
+  display: grid; gap: 3px; min-width: 0;
+}
+.sizebox b {
+  font: 600 20px var(--font-heading); letter-spacing: -0.02em;
+  color: var(--foreground); font-variant-numeric: tabular-nums;
+}
+.sizebox span { font-size: 11.5px; color: var(--muted); line-height: 1.35 }
+.sizebox input {
+  width: 46px; height: 24px; padding: 0 5px; text-align: right;
+  background: var(--card); color: var(--foreground);
+  border: 1px solid var(--field-line); border-radius: var(--radius-sm);
+  font: 500 12px var(--font-body); font-variant-numeric: tabular-nums;
+}
+@media (max-width: 420px) { .sizerow { grid-template-columns: 1fr } }
+.sublabel.topgap { margin-top: 20px }
+
+/* keep a number and its unit together, away from the label */
+.printrow .val { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap }

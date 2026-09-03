@@ -299,33 +299,47 @@
           <details class="group tight">
             <summary>Size and printing</summary>
             <div class="groupbody">
+
+              <p class="sublabel">How wide to print it</p>
+              <div class="sizerow">
+                <div class="sizebox">
+                  <b id="s-print">&ndash;</b>
+                  <span>the smallest it can ever go</span>
+                </div>
+                <div class="sizebox">
+                  <b id="s-need">&ndash;</b>
+                  <span>to be read from
+                    <input type="number" id="distance" value="30" min="1" max="2000" step="5"> cm away</span>
+                </div>
+              </div>
+              <p class="hint">Print it narrower than the first number and phone cameras
+                start missing it. Wider is always safe.</p>
+              <div class="chips" id="printchips"></div>
+
+              <p class="sublabel topgap">Print a sheet of them</p>
+              <div class="printrow">
+                <label for="printmm">Each one<span class="val"><input type="number" id="printmm" value="40" min="5" max="400" step="1"> mm wide</span></label>
+                <label for="printcount">How many<span class="val"><input type="number" id="printcount" value="12" min="1" max="200" step="1"></span></label>
+              </div>
+              <button type="button" class="btn outline wide" id="print-one">Open print view</button>
+              <p class="hint" id="printnote">Lays them out on A4 with cut guides. Choose
+                &ldquo;Save as PDF&rdquo; in the print dialog for a vector file.</p>
+
+              <p class="sublabel topgap">What is in this code</p>
               <dl>
-                <dt>Symbol</dt><dd id="s-version">&ndash;</dd>
-                <dt>Module grid</dt><dd id="s-modules">&ndash;</dd>
-                <dt>Quiet zone</dt><dd id="s-quiet">&ndash;</dd>
-                <dt>Smallest usable print</dt><dd id="s-print">&ndash;</dd>
-                <dt>Scans from</dt><dd id="s-reach">&ndash;</dd>
+                <dt>Grid</dt><dd id="s-grid">&ndash;</dd>
+                <dt>Clear border</dt><dd id="s-border">&ndash;</dd>
+                <dt>Survives damage to</dt><dd id="s-damage">&ndash;</dd>
                 <dt>Valid until</dt><dd id="s-expiry">&ndash;</dd>
               </dl>
               <div class="cap" id="cap" data-level="ok">
                 <div class="track"><div class="fill" id="cap-fill" style="width:0%"></div></div>
                 <div class="lab"><span id="cap-lab-a">&ndash;</span><span id="cap-lab-b">&ndash;</span></div>
               </div>
-              <div class="distrow">
-                <label for="distance">To be scanned from
-                  <input type="number" id="distance" value="30" min="1" max="2000" step="5"> cm</label>
-                <span id="s-need">&ndash;</span>
-              </div>
-              <div class="chips" id="printchips" style="margin-top:14px"></div>
-              <div class="printrow" style="margin-top:12px">
-                <label for="printmm">Each code<input type="number" id="printmm" value="40" min="5" max="400" step="1"> mm wide</label>
-                <label for="printcount">Copies<input type="number" id="printcount" value="12" min="1" max="200" step="1"></label>
-              </div>
-              <button type="button" class="btn outline wide" id="print-one">Open print view</button>
-              <p class="hint" id="printnote">Lays the codes out on A4 with cut guides. Choose &ldquo;Save as PDF&rdquo; in the print dialog for a vector file.</p>
             </div>
           </details>
         </div>
+
       </div>
     </div>
   </section>

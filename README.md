@@ -150,10 +150,17 @@ The destination can then move without a reprint.
 
 ## Sizing for print
 
-- Keep modules at 0.4 mm or more. Width = `(modules + 2 × quiet zone) × 0.4 mm`.
-- A code scans from about 10 times its own width. For 2 m, print it 20 cm wide.
+The panel shows two widths next to each other, because they answer different
+questions:
 
-The quiet zone is 4 clear modules on every side, and it is the requirement people
+- **The smallest it can ever go.** Modules have to stay at 0.4 mm or more, so the
+  width is `(modules + 2 × quiet zone) × 0.4 mm`. Go under it and phone cameras
+  start missing the code.
+- **The width for a reading distance.** A code scans from about 10 times its own
+  width, so 2 m needs 20 cm across. Type a distance, or use the sticker / badge /
+  flyer / poster / banner chips.
+
+The quiet zone is 4 clear squares on every side, and it is the requirement people
 skip.
 
 ## Styling
