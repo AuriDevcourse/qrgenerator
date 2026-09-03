@@ -380,12 +380,22 @@
             <textarea id="batchin" rows="10" spellcheck="false" placeholder="techbbq.org/a/auri, Auri Baciauskas
 techbbq.org/a/soren, S&oslash;ren &Aring;
 techbbq.org/a/bob, Bob"></textarea>
-            <span class="hint">Each line is <code>value</code> or <code>value, label</code>. A dropped CSV takes column one as the value, column two as the label, and skips a header row.</span>
+            <span class="hint">One value per line, or a CSV with a header row. With more than one column you choose which is which below, and a sensible guess is made for you.</span>
           </div>
           <div class="dropzone" id="csvdrop" tabindex="0" role="button" aria-label="Choose or drop a CSV file">
             <span id="csvmsg">Drop a .csv here, or click to choose</span>
             <input type="file" id="csvfile" accept=".csv,text/csv" hidden>
           </div>
+          <div class="colmap" id="colmap" hidden>
+            <p class="sublabel">Which column is which</p>
+            <div class="mapgrid">
+              <label for="map-value">Encode this<select id="map-value"></select></label>
+              <label for="map-label">Show this as the name<select id="map-label"></select></label>
+              <label for="map-file">Name the file after<select id="map-file"></select></label>
+            </div>
+            <p class="hint" id="mappreview"></p>
+          </div>
+
           <div class="batchbar">
             <button type="button" class="btn primary" id="batchrun">Generate &amp; verify</button>
             <button type="button" class="btn outline" id="batchzip" disabled>Download ZIP</button>
@@ -441,6 +451,7 @@ techbbq.org/a/bob, Bob"></textarea>
 
 <script src="./vendor/qrcode.js"></script>
 <script src="./qr-render.js"></script>
+<script src="./csv.js"></script>
 <script src="./zip.js"></script>
 <script src="./vendor/jsqr.js"></script>
 <script src="./app.js"></script>

@@ -66,6 +66,11 @@ everything except your theme and saved styles.
 **Batch.** Paste a list or drop a CSV. You get one verified code per row, a ZIP
 of all of them, or a print sheet. Styling comes from the Design tab.
 
+With more than one column you pick which one gets encoded, which becomes the
+displayed name, and which names the file. It guesses first, by looking for the
+column that parses as a link, and shows you what the first row resolves to. A
+plain one-per-line list needs no configuration at all.
+
 **Camera test.** The Design tab checks the image. This checks the print: hold a
 printed code to the camera and read what a scanner reads. Frames decode in the
 browser and no video leaves the page.
@@ -219,6 +224,7 @@ available and the app flags it.
 | `verify.html` | 43-case suite: renders, rasterises, re-decodes, reports |
 | `probe.html` | the geometry sweeps the numbers above came from |
 | `batch.mjs` | CSV to one SVG per row, from the command line |
+| `csv.js` | one CSV parser, shared by the web app and the command line |
 | `zip.js` | store-only ZIP writer for the in-browser batch export |
 | `build.mjs` | bundles everything into one standalone `dist/quiet-zone.html` |
 | `serve.mjs` | static server, no dependencies |

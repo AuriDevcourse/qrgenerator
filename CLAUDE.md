@@ -117,6 +117,14 @@ back. `verify.html` and the code comments keep the spec terms; the UI does not.
 One accuracy note: the capacity label says **bytes**, not characters. Danish
 `æ` costs two, so "characters" would be wrong.
 
+## The build guard exists for a reason
+
+`build.mjs` compares the `<script src="./...">` tags in `index.html` against its
+own `INLINED` list and fails the build on a mismatch. `zip.js` was in the dev
+page but missing from that list, so the built page had no `QRZip` and Download
+ZIP threw on the deployed site while working locally. Add a script to both, or
+the build stops.
+
 ## Damage tolerance, and two ways it went wrong
 
 Paints damage onto the rendered code and binary-searches the largest fraction

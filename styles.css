@@ -855,3 +855,22 @@ input.swatch-val:focus { border-color: var(--foreground); color: var(--foregroun
 .dmgbar { height: 6px; background: var(--card-2); border-radius: 9999px; overflow: hidden }
 .dmgbar > span { display: block; height: 100%; background-image: var(--gradient); border-radius: 9999px }
 .dmgrow b { font: 600 14px var(--font-body); font-variant-numeric: tabular-nums; min-width: 42px; text-align: right }
+
+/* ---- batch column mapping ---------------------------------------------- */
+.colmap {
+  margin-top: 16px; padding: 14px; background: var(--card-2);
+  border-radius: var(--radius-md);
+}
+.mapgrid { display: grid; gap: 10px }
+.mapgrid label {
+  display: grid; grid-template-columns: 1fr 170px; align-items: center; gap: 12px;
+  font: 500 13px var(--font-body); color: var(--foreground);
+}
+.mapgrid select {
+  height: 34px; padding: 0 9px; min-width: 0;
+  background: var(--card); color: var(--foreground);
+  border: 1px solid var(--field-line); border-radius: var(--radius-sm);
+  font: 400 13px var(--font-body);
+}
+.colmap .hint { margin-top: 11px; overflow-wrap: anywhere }
+@media (max-width: 520px) { .mapgrid label { grid-template-columns: 1fr } }

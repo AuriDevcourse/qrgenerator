@@ -1272,28 +1272,112 @@
 
   var batchResults = [];
 
-  // Accepts "value" or "value, label" per line. A pasted or dropped CSV is the
-  // same shape, so one parser covers both; a header row is detected and dropped.
-  function parseBatch(raw) {
-    var lines = String(raw).split(/\r?\n/).map(function (l) { return l.trim(); })
-      .filter(function (l) { return l.length > 0; });
-    var rows = lines.map(function (line) {
-      var parts = [];
-      var cell = '', quoted = false;
-      for (var i = 0; i < line.length; i++) {
-        var ch = line[i];
-        if (quoted) {
-          if (ch === '"') { if (line[i + 1] === '"') { cell += '"'; i++; } else quoted = false; }
-          else cell += ch;
-        } else if (ch === '"') quoted = true;
-        else if (ch === ',') { parts.push(cell); cell = ''; }
-        else cell += ch;
-      }
-      parts.push(cell);
-      return { value: (parts[0] || '').trim(), label: (parts[1] || '').trim() };
+  // Batch input is parsed once into rows, then a column mapping decides what
+  // gets encoded, what is shown, and what names the file. A pasted one-per-line
+  // list still needs no configuration: it is simply a single-column table.
+
+  var batchTable = { header: null, rows: [] };
+
+  var HEADER_WORDS = /^(url|link|value|code|data|destination|target|name|label|title|email|phone|id|file|filename|ref|slug)$/i;
+
+  // A first row is a header when it names things rather than containing them.
+  function looksLikeHeader(rows) {
+    if (rows.length < 2) return false;
+    var first = rows[0];
+    if (first.some(function (c) { return HEADER_WORDS.test(c); })) return true;
+    var carries = function (row) {
+      return row.some(function (c) {
+        var d = R.detect(c);
+        return d && d.type !== 'text';
+      });
+    };
+    return !carries(first) && carries(rows[1]);
+  }
+
+  function readTable(raw) {
+    var rows = QRCsv.parse(raw);
+    if (!rows.length) return { header: null, rows: [] };
+    if (looksLikeHeader(rows)) return { header: rows[0], rows: rows.slice(1) };
+    return { header: null, rows: rows };
+  }
+
+  function columnNames(t) {
+    var width = t.rows.reduce(function (n, r) { return Math.max(n, r.length); },
+      t.header ? t.header.length : 1);
+    var out = [];
+    for (var i = 0; i < width; i++) {
+      out.push(t.header && t.header[i] ? t.header[i] : 'Column ' + (i + 1));
+    }
+    return out;
+  }
+
+  // Guesses that are right most of the time: the column that parses as a link
+  // gets encoded, a name-ish column becomes the label.
+  function guessMapping(t) {
+    var names = columnNames(t);
+    var sample = t.rows[0] || [];
+    var value = 0;
+    for (var i = 0; i < names.length; i++) {
+      var d = R.detect(sample[i]);
+      if (d && d.type !== 'text') { value = i; break; }
+      if (/^(url|link|value|code|data|destination|target)$/i.test(names[i])) { value = i; break; }
+    }
+    var label = value;
+    for (var j = 0; j < names.length; j++) {
+      if (j === value) continue;
+      if (/^(name|label|title|id|ref|slug|file|filename)$/i.test(names[j])) { label = j; break; }
+      if (label === value) label = j;
+    }
+    return { value: value, label: label, file: label };
+  }
+
+  function currentMapping() {
+    var pick = function (sel, fallback) {
+      var el = $(sel);
+      return el && el.value !== '' ? +el.value : fallback;
+    };
+    var g = guessMapping(batchTable);
+    return { value: pick('#map-value', g.value), label: pick('#map-label', g.label), file: pick('#map-file', g.file) };
+  }
+
+  function renderMapping() {
+    var box = $('#colmap');
+    var names = columnNames(batchTable);
+    if (!batchTable.rows.length || names.length < 2) {
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    var g = guessMapping(batchTable);
+    [['#map-value', g.value], ['#map-label', g.label], ['#map-file', g.file]].forEach(function (pair) {
+      var el = $(pair[0]);
+      var keep = el.value !== '' && +el.value < names.length ? +el.value : pair[1];
+      el.innerHTML = names.map(function (n, i) {
+        return '<option value="' + i + '"' + (i === keep ? ' selected' : '') + '>' + esc(n) + '</option>';
+      }).join('');
     });
-    if (rows.length > 1 && /^(url|link|value|code|data)$/i.test(rows[0].value)) rows.shift();
-    return rows.filter(function (r) { return r.value; });
+    previewMapping();
+  }
+
+  function previewMapping() {
+    var rows = resolveBatch();
+    var el = $('#mappreview');
+    if (!rows.length) { el.textContent = ''; return; }
+    var first = rows[0];
+    el.textContent = rows.length + ' row' + (rows.length === 1 ? '' : 's') +
+      '. First one encodes "' + first.value + '", shows as "' + (first.label || first.value) +
+      '", saves as ' + slug(first.file || first.value, 1) + '.svg';
+  }
+
+  function resolveBatch() {
+    var map = currentMapping();
+    return batchTable.rows.map(function (r) {
+      return {
+        value: (r[map.value] || '').trim(),
+        label: (r[map.label] || '').trim(),
+        file: (r[map.file] || '').trim()
+      };
+    }).filter(function (x) { return x.value; });
   }
 
   function slug(s, i) {
@@ -1305,7 +1389,9 @@
   }
 
   function runBatch() {
-    var rows = parseBatch($('#batchin').value);
+    batchTable = readTable($('#batchin').value);
+    renderMapping();
+    var rows = resolveBatch();
     if (!rows.length) {
       $('#batchsummary').textContent = 'Nothing to generate. Add at least one line.';
       $('#batchgrid').innerHTML = '';
@@ -1358,7 +1444,7 @@
           '</b>' + esc(row.label || row.value) + '</div>';
         if (good) {
           batchResults.push({
-            name: slug(row.label || row.value, batchResults.length + 1) + '.svg',
+            name: slug(row.file || row.label || row.value, batchResults.length + 1) + '.svg',
             svg: svg, label: row.label || row.value
           });
         }
@@ -1831,10 +1917,26 @@
       var fr = new FileReader();
       fr.onload = function () {
         $('#batchin').value = fr.result;
-        $('#csvmsg').textContent = f.name + ' · ' + parseBatch(fr.result).length + ' rows';
+        batchTable = readTable(fr.result);
+        renderMapping();
+        $('#csvmsg').textContent = f.name + ' · ' + batchTable.rows.length + ' rows · ' +
+          columnNames(batchTable).length + ' columns';
       };
       fr.readAsText(f);
     }
+
+    var mapTimer = 0;
+    $('#batchin').addEventListener('input', function () {
+      clearTimeout(mapTimer);
+      mapTimer = setTimeout(function () {
+        batchTable = readTable($('#batchin').value);
+        renderMapping();
+      }, 350);
+    });
+
+    ['#map-value', '#map-label', '#map-file'].forEach(function (sel) {
+      $(sel).addEventListener('change', previewMapping);
+    });
     cd.addEventListener('drop', function (e) {
       e.preventDefault();
       var f = e.dataTransfer.files && e.dataTransfer.files[0];

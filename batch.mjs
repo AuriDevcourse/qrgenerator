@@ -13,7 +13,9 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createRequire } from 'node:module';
 
-const R = createRequire(import.meta.url)('./qr-render.js');
+const req = createRequire(import.meta.url);
+const R = req('./qr-render.js');
+const { parse } = req('./csv.js');   // same parser the web app uses
 
 // ---- args ----------------------------------------------------------------
 
@@ -55,28 +57,7 @@ const opt = {
 
 // ---- csv -----------------------------------------------------------------
 
-// Small but correct: handles quoted fields, embedded commas, "" escapes, CRLF.
-function parseCsv(text) {
-  const rows = [];
-  let row = [], cell = '', quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (quoted) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') { cell += '"'; i++; } else quoted = false;
-      } else cell += ch;
-      continue;
-    }
-    if (ch === '"') quoted = true;
-    else if (ch === ',') { row.push(cell); cell = ''; }
-    else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
-    else if (ch !== '\r') cell += ch;
-  }
-  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
-  return rows.filter((r) => r.some((c) => c.trim() !== ''));
-}
-
-const rows = parseCsv(readFileSync(file, 'utf8'));
+const rows = parse(readFileSync(file, 'utf8'));
 if (!rows.length) { console.error('empty csv'); process.exit(1); }
 
 const header = rows[0].map((h) => h.trim());

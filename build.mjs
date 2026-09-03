@@ -26,19 +26,32 @@ const headKept = head
 // Drop the dev <script src> tags. The real sources are inlined below.
 const bodyContent = body.replace(/\s*<script src="[^"]*"><\/script>/g, '').trim();
 
+// The dev page and this list have to agree. zip.js was once in index.html but
+// missing here, so the built page had no QRZip and Download ZIP threw.
+const LOCAL = [...body.matchAll(/<script src="\.\/([^"]+)"><\/script>/g)].map((m) => m[1]);
+
 // Inline scripts are pinned by hash, so the built page runs its own four
 // bundles and nothing else. An injected <script> or an inline handler is
 // refused by the browser even if some value slipped past validation.
-const scripts = [
-  read('./vendor/qrcode.js'),
-  read('./qr-render.js'),
-  read('./vendor/jsqr.js'),
-  read('./app.js'),
+const INLINED = [
+  'vendor/qrcode.js',
+  'qr-render.js',
+  'csv.js',
+  'zip.js',
+  'vendor/jsqr.js',
+  'app.js',
 ];
+const scripts = INLINED.map((f) => read('./' + f));
 // The hash must cover the element's exact text content, whitespace included,
 // so the bodies are built first and both the hash and the tag use them verbatim.
 const bodies = scripts.map((src) => `\n${src}\n`);
 const sha = (body) => `'sha256-${createHash('sha256').update(body, 'utf8').digest('base64')}'`;
+
+const missing = LOCAL.filter((f) => !INLINED.includes(f));
+if (missing.length) {
+  console.error(`build failed: index.html loads ${missing.join(', ')}, which this build does not inline.`);
+  process.exit(1);
+}
 
 // style-src keeps 'unsafe-inline': the page sets style attributes from script
 // (meter width, swatch colours). Those values are validated colours, and a
