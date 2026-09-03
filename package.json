@@ -1,7 +1,7 @@
 {
-  "name": "quiet-zone",
+  "name": "qr-generator",
   "version": "1.0.0",
-  "description": "QR code generator that verifies its own output by decoding it",
+  "description": "A QR code generator that verifies its own output by decoding it",
   "private": true,
   "scripts": {
     "start": "node serve.mjs",

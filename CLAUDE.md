@@ -1,6 +1,19 @@
-# Quiet Zone: working notes
+# QR Generator: working notes
 
 QR code generator that verifies its own output. Vanilla JS, no framework.
+
+## The name
+
+Called **QR Generator**. It was "Quiet Zone" until 2026-09-03, which is why:
+
+- **The `localStorage` keys are still `quietzone.*`.** They hold saved styles,
+  recents and the theme. Renaming them would discard someone's work for a
+  cosmetic gain, so they stay.
+- **`serve.mjs` no longer keys its already-running check off the page title.**
+  It looks for `<meta name="generator" content="qr-generator">` instead, so a
+  future rename cannot silently break it. Keep that tag in `index.html`.
+- "quiet zone" still appears throughout as the spec term for the clear border.
+  That is the real concept, not a leftover.
 
 ## Ground rules
 
@@ -10,7 +23,7 @@ QR code generator that verifies its own output. Vanilla JS, no framework.
 - **`dist/` is generated.** Edit `index.html`, `app.js` and `styles.css`, then
   `npm run build`. It writes the same self-contained page twice:
   `dist/index.html`, which Vercel serves as the site root, and
-  `dist/quiet-zone.html` for handing someone a single file. Never hand-edit
+  `dist/qr-generator.html` for handing someone a single file. Never hand-edit
   either. `vercel.json` points `outputDirectory` at `dist`.
 - **A server is required to run anything.** `npm start` (`serve.mjs`, no deps).
   The scan check reads canvas pixels back, which `file://` forbids, so the app

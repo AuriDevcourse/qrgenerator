@@ -1,4 +1,4 @@
-# Quiet Zone
+# QR Generator
 
 A QR code generator that decodes its own output before handing it to you. If a
 code will not scan, you find out on the page.
@@ -252,7 +252,7 @@ available and the app flags it.
 | `batch.mjs` | CSV to one SVG per row, from the command line |
 | `csv.js` | one CSV parser, shared by the web app and the command line |
 | `zip.js` | store-only ZIP writer for the in-browser batch export |
-| `build.mjs` | bundles everything into one standalone `dist/quiet-zone.html` |
+| `build.mjs` | bundles everything into one standalone `dist/qr-generator.html` |
 | `serve.mjs` | static server, no dependencies |
 | `vendor/qrcode.js` | the encoder (MIT, Kazuhiko Arase) |
 | `vendor/jsqr.js` | the decoder behind the scan check (Apache-2.0, jsQR) |

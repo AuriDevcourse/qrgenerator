@@ -66,7 +66,9 @@ async function alreadyOurs(port) {
     const res = await fetch(`http://127.0.0.1:${port}/index.html`, {
       signal: AbortSignal.timeout(1500)
     });
-    return res.ok && (await res.text()).includes('<title>Quiet Zone</title>');
+    // Keyed on a marker meta tag rather than the title, so renaming the tool
+    // cannot silently break this check.
+    return res.ok && (await res.text()).includes('name="generator" content="qr-generator"');
   } catch {
     return false;
   }
@@ -76,7 +78,7 @@ server.on('error', async (err) => {
   if (err.code !== 'EADDRINUSE') throw err;
 
   if (await alreadyOurs(PORT)) {
-    console.log(`Quiet Zone is already running. Nothing to do.\n`);
+    console.log(`QR Generator is already running. Nothing to do.\n`);
     console.log(`  App        http://127.0.0.1:${PORT}/`);
     console.log(`  Self-test  http://127.0.0.1:${PORT}/verify.html\n`);
     process.exit(0);
@@ -89,6 +91,6 @@ server.on('error', async (err) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Quiet Zone   http://127.0.0.1:${PORT}/`);
-  console.log(`Self-test    http://127.0.0.1:${PORT}/verify.html`);
+  console.log(`QR Generator  http://127.0.0.1:${PORT}/`);
+  console.log(`Self-test     http://127.0.0.1:${PORT}/verify.html`);
 });

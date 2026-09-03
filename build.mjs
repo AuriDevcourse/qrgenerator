@@ -102,7 +102,7 @@ mkdirSync(new URL('./dist/', import.meta.url), { recursive: true });
 
 // index.html so dist/ is a servable site root (Vercel points at it), and a named
 // copy for handing someone a single file.
-for (const name of ['index.html', 'quiet-zone.html']) {
+for (const name of ['index.html', 'qr-generator.html']) {
   writeFileSync(new URL(`./dist/${name}`, import.meta.url), out);
 }
 // ---- installable, and works with no network -------------------------------
@@ -117,8 +117,8 @@ writeFileSync(new URL('./dist/icon.svg', import.meta.url),
   `</linearGradient></defs><path fill="url(#g)" d="${markPath}"/></svg>\n`);
 
 writeFileSync(new URL('./dist/manifest.webmanifest', import.meta.url), JSON.stringify({
-  name: 'Quiet Zone',
-  short_name: 'Quiet Zone',
+  name: 'QR Generator',
+  short_name: 'QR Generator',
   description: 'A QR code generator that decodes its own output.',
   start_url: '.',
   scope: '.',
@@ -128,8 +128,8 @@ writeFileSync(new URL('./dist/manifest.webmanifest', import.meta.url), JSON.stri
   icons: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }]
 }, null, 2) + '\n');
 
-writeFileSync(new URL('./dist/sw.js', import.meta.url), `/* Quiet Zone offline shell */
-const CACHE = 'quiet-zone-v${Date.now().toString(36)}';
+writeFileSync(new URL('./dist/sw.js', import.meta.url), `/* QR Generator offline shell */
+const CACHE = 'qr-generator-v${Date.now().toString(36)}';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', (e) => {
@@ -160,5 +160,5 @@ self.addEventListener('fetch', (e) => {
 });
 `);
 
-console.log(`dist/index.html + dist/quiet-zone.html  ${(out.length / 1024).toFixed(0)} KB  (self-contained)`);
+console.log(`dist/index.html + dist/qr-generator.html  ${(out.length / 1024).toFixed(0)} KB  (self-contained)`);
 console.log('dist/manifest.webmanifest + dist/sw.js + dist/icon.svg  (installable, offline)');
