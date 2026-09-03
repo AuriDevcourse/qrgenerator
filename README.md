@@ -148,10 +148,11 @@ Styled on the **TechBBQ design system** (`~/Documents/GitHub/tdesignsystem`, bra
   tall, 8px radius, `#131313` fill, `#d9d9d9` @ 40% border.
 - Status colours (`#00c11a` success, `#fd9d04` spark, `#ce0f2e` founder red) appear
   only as dots and state rules, per the system's "functional colours only" rule.
-- The signature warm gradient carries the capacity meter, and the brand orb glow
-  sits behind the page. The system blurs a flat orb; here the glow is painted as a
-  radial gradient directly — same look, one less compositing layer, and no 1500px
-  blur surface to render.
+- The brand **orb backdrop is copied verbatim** from the system's `globals.css`:
+  exact gradient stops, `blur(40px)`, `mix-blend-mode: screen`, the 16s/22s drift.
+  It is used the way the system uses it — a section backdrop on the header band,
+  with the `fade={false}` variant, not a page-wide wash. The signature warm
+  gradient also carries the capacity meter.
 - The centre mark is the real brand asset: the path from
   `public/brand/icon-gradient.svg`, inlined as vector (not an embedded raster) in
   gradient, founder red, white and black.

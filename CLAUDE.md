@@ -22,6 +22,16 @@ QR code generator that verifies its own output. Vanilla JS, no framework.
   `app/globals.css` + `public/brand/tokens.json`. Components: `components/ui/`.
   Buttons are always pills; labels are rounded squares; status colours are for
   dots and state rules only, never decoration.
+- **The orb backdrop is copied verbatim** from that repo's `globals.css` — exact
+  gradient stops, `blur(40px)`, `mix-blend-mode: screen`, the 16s/22s drift and
+  the `--subtle` variant. Do not "improve" it. The system uses it as a
+  section backdrop (`position: absolute` inside a `relative overflow-hidden`
+  band), not as a page-wide fixed wash, so it lives on the `.cover` header band
+  with `fade={false}`.
+- **Chrome colours are tokens** (`--pill-on-bg`, `--outline-line`, `--chip-bg`,
+  …) so the always-dark `.cover` can re-scope them instead of every light-theme
+  rule needing an exception. Add new chrome colours as tokens, and remember
+  `--surface` feeds the focus ring — the cover must keep it light.
 
 ## Scannability rules — do not undo these
 
