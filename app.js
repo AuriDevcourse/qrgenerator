@@ -726,6 +726,179 @@
     restore(past.stack[past.at]);
   }
 
+  // ---- damage tolerance ---------------------------------------------------
+  //
+  // Paints damage onto the finished code and re-decodes, binary-searching for
+  // the point where it stops reading. Two models, because they fail
+  // differently: one patch is a sticker or a tear, scattered dropout is dirt
+  // and print defects. Both are measured in fraction of the code's own area.
+
+  var dmgCanvas = document.createElement('canvas');
+  var NOMINAL = { L: 0.07, M: 0.15, Q: 0.25, H: 0.30 };
+
+  // Fixed sequence, so a re-run on the same design gives the same answer.
+  function seeded(seed) {
+    var v = seed >>> 0;
+    return function () {
+      v = (v * 1664525 + 1013904223) >>> 0;
+      return v / 4294967296;
+    };
+  }
+
+  function damageFrame(svgStr, w, h, bg) {
+    return new Promise(function (res, rej) {
+      var img = new Image();
+      var url = URL.createObjectURL(new Blob([svgStr], { type: 'image/svg+xml' }));
+      img.onload = function () {
+        dmgCanvas.width = w; dmgCanvas.height = h;
+        var ctx = dmgCanvas.getContext('2d');
+        ctx.fillStyle = bg && bg !== 'transparent' ? bg : '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        res(ctx);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('render')); };
+      img.src = url;
+    });
+  }
+
+  // One square patch covering `frac` of the code area, kept off the three
+  // finder patterns: covering a finder kills any code and measures nothing.
+  function paintPatch(ctx, geo, frac) {
+    var side = Math.sqrt(frac) * geo.codePx;
+    var x = geo.originX + geo.codePx * 0.30 - side / 2;
+    var y = geo.originY + geo.codePx * 0.58 - side / 2;
+    ctx.fillStyle = '#808080';
+    ctx.fillRect(x, y, side, side);
+  }
+
+  // Module-aligned dropout on data modules only. Finder, timing and alignment
+  // modules are skipped: hitting one destroys grid detection at any correction
+  // level, which would measure the wrong thing. The first version did hit them,
+  // and reported 0% at level H while a single patch survived 21%.
+  function paintScatter(ctx, geo, frac, seed) {
+    var rnd = seeded(seed || 20260903);
+    var pool = geo.dataModules;
+    if (!pool.length) return;
+    var hits = Math.min(pool.length, Math.round(geo.modules * geo.modules * frac));
+    var taken = {};
+    ctx.fillStyle = '#808080';
+    var placed = 0, guard = 0;
+    while (placed < hits && guard++ < pool.length * 8) {
+      var i = Math.floor(rnd() * pool.length);
+      if (taken[i]) continue;
+      taken[i] = 1; placed++;
+      ctx.fillRect(geo.originX + pool[i][1] * geo.modulePx,
+        geo.originY + pool[i][0] * geo.modulePx, geo.modulePx, geo.modulePx);
+    }
+  }
+
+  function damageTest() {
+    var text = payload();
+    if (!text) return Promise.resolve(null);
+    var o = opts();
+    if (R.utf8len(text) > R.MAX_BYTES[o.ec]) return Promise.resolve(null);
+
+    var m = R.encode(text, o.ec);
+    var dim = R.dimensions(text, o);
+    var w = 660;                                  // enough to decode, quick to redraw
+    var h = Math.round(w * dim.ratio);
+    var svg = R.svg(text, Object.assign({}, o, { px: w }));
+    var unit = w / dim.vbW;                       // px per module unit
+    // Every module that carries data, so scatter can leave the function
+    // patterns alone.
+    var dataModules = [];
+    for (var r = 0; r < m.size; r++) {
+      for (var c = 0; c < m.size; c++) {
+        if (!R.isFunctionModule(m.size, m.version, r, c)) dataModules.push([r, c]);
+      }
+    }
+
+    var geo = {
+      modules: m.size,
+      modulePx: unit,
+      codePx: m.size * unit,
+      originX: (dim.qx + o.margin) * unit,
+      originY: (dim.qy + o.margin) * unit,
+      dataModules: dataModules
+    };
+
+    return damageFrame(svg, w, h, o.frame ? o.frame.fill : o.bg).then(function (ctx) {
+      var pristine;
+      try { pristine = ctx.getImageData(0, 0, w, h); }
+      catch (e) { return { blocked: true }; }
+
+      function reads(paint, frac, seed) {
+        ctx.putImageData(pristine, 0, 0);
+        paint(ctx, geo, frac, seed);
+        var got = window.jsQR(ctx.getImageData(0, 0, w, h).data, w, h);
+        return !!got && got.data === text;
+      }
+
+      // Binary search the largest fraction that still reads.
+      function threshold(paint, seed) {
+        if (!reads(paint, 0.02, seed)) return 0;
+        var lo = 0.02, hi = 0.6;
+        for (var i = 0; i < 7; i++) {
+          var mid = (lo + hi) / 2;
+          if (reads(paint, mid, seed)) lo = mid; else hi = mid;
+        }
+        return lo;
+      }
+
+      // Scatter is one random arrangement per seed, and a single sample swung
+      // enough to put level Q above level H. Three seeds, median reported.
+      var samples = [20260903, 761, 44017].map(function (seed) {
+        return threshold(paintScatter, seed);
+      }).sort(function (a, b) { return a - b; });
+
+      var result = { patch: threshold(paintPatch), scatter: samples[1], ec: o.ec };
+      ctx.putImageData(pristine, 0, 0);
+      return result;
+    });
+  }
+
+  function runDamage() {
+    var out = $('#damageout');
+    var btn = $('#damagerun');
+    btn.disabled = true;
+    out.innerHTML = '<p class="hint">Testing…</p>';
+
+    damageTest().then(function (r) {
+      btn.disabled = false;
+      if (!r) {
+        out.innerHTML = '<p class="hint">Nothing to test yet.</p>';
+        return;
+      }
+      if (r.blocked) {
+        out.innerHTML = '<p class="hint">Needs a local server: reading pixels back is blocked on file:// URLs.</p>';
+        return;
+      }
+      var nominal = NOMINAL[r.ec];
+      var row = function (label, frac, note) {
+        var pct = Math.round(frac * 100);
+        return '<div class="dmgrow">' +
+          '<span class="dmglabel">' + label + '<span class="what">' + note + '</span></span>' +
+          '<span class="dmgbar"><span style="width:' + Math.min(100, pct * 2) + '%"></span></span>' +
+          '<b>' + pct + '%</b></div>';
+      };
+      out.innerHTML =
+        row('One covered patch', r.patch, 'a sticker or a tear over the data') +
+        row('Scattered dropout', r.scatter, 'dirt or missing ink, median of three') +
+        '<p class="hint">Level ' + r.ec + ' is quoted at ' + Math.round(nominal * 100) +
+        '% of <em>codewords</em>, which is not the same as covered area: a patch wipes ' +
+        'out every codeword beneath it, and scattered loss touches more codewords for ' +
+        'the same area, so it always scores lower. Both figures are what a strict ' +
+        'decoder could still read here, so treat them as a floor. Finder and timing ' +
+        'patterns are left alone, because covering one kills any code regardless of ' +
+        'correction level.</p>';
+    }).catch(function () {
+      btn.disabled = false;
+      out.innerHTML = '<p class="hint">The test could not run.</p>';
+    });
+  }
+
   // ---- compare every shape combination ------------------------------------
   //
   // Nine looks on the current content and colours, each decoded. Rendering is
@@ -1572,6 +1745,8 @@
         .then(function () { flash('#share', 'Link copied'); })
         .catch(function () { flash('#share', 'Link is in the address bar'); });
     });
+
+    $('#damagerun').addEventListener('click', runDamage);
 
     $('#comparegroup').addEventListener('toggle', function () {
       if ($('#comparegroup').open) renderCompare();

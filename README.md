@@ -39,6 +39,14 @@ groups show their current colours as swatches in the header, so you can see the
 palette without opening anything. The TechBBQ mark comes in gradient, founder red,
 white, black or any colour you pick.
 
+**Damage tolerance** covers part of the finished code and reads it again, binary
+searching for the point where it stops decoding. Two models, because they fail
+differently: one patch is a sticker or a tear, scattered dropout is dirt and
+missing ink. Measured on the current design at level M, a patch survives to about
+11% of the code's area and scattered loss to about 3%, against a nominal 15% for
+level M. The nominal figure counts lost codewords, not area, which is why they
+differ.
+
 **Compare shapes** puts all nine module-and-eye combinations side by side on your
 own content and colours, decodes each one, and labels it. Click a cell to use it.
 It is the same check the main preview runs, applied nine times, so a look that

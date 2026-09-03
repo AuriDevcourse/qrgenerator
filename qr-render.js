@@ -107,6 +107,13 @@
     return w && r >= w.r0 && r <= w.r1 && c >= w.c0 && c <= w.c1;
   }
 
+  // Finder, timing and alignment modules. Exposed because damage simulation has
+  // to avoid them: destroying a finder kills any code at any correction level,
+  // which measures grid detection rather than error recovery.
+  function isFunctionModule(size, version, r, c) {
+    return inEye(size, r, c) || inTiming(size, r, c) || inAlignment(size, version, r, c);
+  }
+
   // ---- path builders (units = 1 module) -----------------------------------
 
   function n(v) { return Math.round(v * 1000) / 1000; }
@@ -566,6 +573,7 @@
     contrast: contrast,
     worstContrast: worstContrast,
     hasNonAscii: hasNonAscii,
+    isFunctionModule: isFunctionModule,
     logoWindow: logoWindow
   };
 });

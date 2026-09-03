@@ -117,6 +117,25 @@ back. `verify.html` and the code comments keep the spec terms; the UI does not.
 One accuracy note: the capacity label says **bytes**, not characters. Danish
 `æ` costs two, so "characters" would be wrong.
 
+## Damage tolerance, and two ways it went wrong
+
+Paints damage onto the rendered code and binary-searches the largest fraction
+that still decodes. Both mistakes are worth remembering, because both produced
+confident numbers that were wrong:
+
+- **Scatter must skip function modules.** The first version picked random
+  modules across the whole grid. Finder, timing and alignment patterns are 24%
+  of a version-3 symbol, so a 2% scatter nearly always destroyed one, and the
+  result measured grid detection rather than error recovery. It reported 0% at
+  level H while a single patch survived 21%. `R.isFunctionModule()` exists for
+  this; use it.
+- **One seed is one sample.** With a single fixed seed, scatter came out
+  non-monotonic across levels (Q above H). It is the median of three seeds now.
+  A sweep of L/M/Q/H should be monotonic in both models; if it is not, the
+  method is broken, not the codes.
+- The patch is placed off the finders deliberately. Covering one kills any code
+  at any level and measures nothing.
+
 ## Compare grid
 
 Nine shape combinations, each decoded through the same `decodeCheck()` the main
