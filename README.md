@@ -12,6 +12,10 @@ npm run build      # bundle into one standalone dist/quiet-zone.html
 npm run batch -- people.csv --col url --name-col name --out ./out
 ```
 
+Running `npm start` when it is already up just tells you so and exits — it will
+not throw a port-in-use trace. If something else holds the port, pass another one:
+`npm start -- 8778`.
+
 **A local server is required, not optional.** The scan check draws the generated
 SVG to a canvas and reads the pixels back; on a `file://` URL the canvas is
 tainted and that read is blocked. `npm start` runs a zero-dependency Node static

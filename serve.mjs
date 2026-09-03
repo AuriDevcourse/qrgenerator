@@ -58,6 +58,35 @@ const server = createServer(async (req, res) => {
   }
 });
 
+// Is the thing already on this port our own server? Then starting again is a
+// no-op worth saying plainly, rather than an unhandled EADDRINUSE stack trace.
+async function alreadyOurs(port) {
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/index.html`, {
+      signal: AbortSignal.timeout(1500)
+    });
+    return res.ok && (await res.text()).includes('<title>Quiet Zone</title>');
+  } catch {
+    return false;
+  }
+}
+
+server.on('error', async (err) => {
+  if (err.code !== 'EADDRINUSE') throw err;
+
+  if (await alreadyOurs(PORT)) {
+    console.log(`Quiet Zone is already running — nothing to do.\n`);
+    console.log(`  App        http://127.0.0.1:${PORT}/`);
+    console.log(`  Self-test  http://127.0.0.1:${PORT}/verify.html\n`);
+    process.exit(0);
+  }
+
+  console.error(`Port ${PORT} is in use by something else.\n`);
+  console.error(`Start on a different port with:\n  npm start -- ${PORT + 1}\n`);
+  console.error(`Or find what is holding it:\n  lsof -nP -iTCP:${PORT} -sTCP:LISTEN`);
+  process.exit(1);
+});
+
 server.listen(PORT, () => {
   console.log(`Quiet Zone   http://127.0.0.1:${PORT}/`);
   console.log(`Self-test    http://127.0.0.1:${PORT}/verify.html`);
