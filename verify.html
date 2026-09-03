@@ -87,6 +87,7 @@ CASES.push({ name: 'calendar event', text: P.event({ title: 'TechBBQ 2026', loca
 
 // non-ASCII: URLs get percent-encoded (safe); raw text does not (known limitation)
 CASES.push({ name: 'danish URL -> %-encoded', text: P.url({ url: 'techbbq.org/køb-billet' }), ec: 'M' });
+// The em dash here is part of the test: it is another non-ASCII character.
 CASES.push({ name: 'raw non-ASCII text', text: 'Hej æøå — København', ec: 'M', xfail: 'no ECI header' });
 
 // gradient module fills
@@ -97,7 +98,7 @@ CASES.push({ name: 'gradient + dark eyes', text: 'https://techbbq.org/tickets', 
 CASES.push({ name: 'pale gradient (low contrast)', text: 'https://techbbq.org/tickets', ec: 'M',
   fgGradient: { from: '#fd9d04', to: '#fa7000' }, risky: true });
 
-// caption frames — output is taller than wide
+// caption frames: output is taller than wide
 CASES.push({ name: 'frame: SCAN ME', text: 'https://techbbq.org/tickets', ec: 'M',
   style: 'rounded', eyeStyle: 'rounded', frame: { text: 'SCAN ME', fill: '#ce0f2e', textColor: '#ffffff' } });
 CASES.push({ name: 'frame + gradient + mark', text: 'https://techbbq.org/tickets', ec: 'H',

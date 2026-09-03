@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * batch.mjs — generate one SVG per row of a CSV.
+ * batch.mjs: generate one SVG per row of a CSV.
  * For the case the web app is bad at: 300 badge codes, one per attendee.
  *
  *   node batch.mjs people.csv --col url --name-col name --out ./out --ec H

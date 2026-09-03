@@ -38,7 +38,7 @@
           <span id="theme-icon" aria-hidden="true">&#9680;</span>
         </button>
       </div>
-      <p>A QR generator that reads its own output back with a decoder before handing it to you &mdash; so you find out here, not on a printed banner, whether the code actually scans.</p>
+      <p>Every code gets decoded before you download it, so you know it scans. You see what a scanner sees.</p>
     </header>
   </div>
 </section>
@@ -106,7 +106,7 @@
                   <span class="swatch"><input type="color" id="bg" value="#ffffff" aria-label="Background colour"></span>
                   <span class="swatch-val" id="bg-val">#ffffff</span>
                 </div>
-                <span class="hint">Dark modules on a light ground is the orientation every scanner expects.</span>
+                <span class="hint">Scanners expect dark modules on a light ground.</span>
               </div>
               <div class="field">
                 <label class="check"><input type="checkbox" id="gradon"> Gradient fill</label>
@@ -147,7 +147,7 @@
                   <button type="button" data-val="rounded" aria-pressed="true">Rounded</button>
                   <button type="button" data-val="dots" aria-pressed="false">Dots</button>
                 </div>
-                <span class="hint">Finder, timing and alignment patterns always stay square &mdash; decoders use them to lock onto the grid.</span>
+                <span class="hint">Decoders find the grid by the corner, timing and alignment patterns, so those stay square.</span>
               </div>
               <div class="field">
                 <label id="lbl-eyes">Corner eyes</label>
@@ -165,7 +165,7 @@
                   <button type="button" data-val="Q" aria-pressed="false">Q 25%</button>
                   <button type="button" data-val="H" aria-pressed="false">H 30%</button>
                 </div>
-                <span class="hint">How much of the code can be smudged, torn or covered and still read.</span>
+                <span class="hint">How much of the code can be smudged, torn or covered and still scan.</span>
               </div>
               <div class="field range">
                 <div class="row"><label for="margin">Quiet zone</label><output id="margin-val">4</output></div>
@@ -196,7 +196,7 @@
                 <div class="range">
                   <div class="row"><label for="logopct">Mark size</label><output id="logopct-val">20%</output></div>
                   <input type="range" id="logopct" min="8" max="35" step="1" value="20">
-                  <span class="hint">A mark covers real data. Error correction jumps to H so the code can rebuild what is hidden; past ~30% even H cannot.</span>
+                  <span class="hint">A mark covers real data, so error correction jumps to H to rebuild it. Past about 30% width, even H fails.</span>
                 </div>
               </div>
             </div>
@@ -252,25 +252,25 @@
         <div class="notices" id="notices"></div>
 
         <div class="card">
-          <div class="readline" id="readline">&mdash;</div>
+          <div class="readline" id="readline">&ndash;</div>
           <details class="group tight">
             <summary>Size and printing</summary>
             <div class="groupbody">
               <dl>
-                <dt>Symbol</dt><dd id="s-version">&mdash;</dd>
-                <dt>Module grid</dt><dd id="s-modules">&mdash;</dd>
-                <dt>Quiet zone</dt><dd id="s-quiet">&mdash;</dd>
-                <dt>Smallest usable print</dt><dd id="s-print">&mdash;</dd>
-                <dt>Scans from</dt><dd id="s-reach">&mdash;</dd>
+                <dt>Symbol</dt><dd id="s-version">&ndash;</dd>
+                <dt>Module grid</dt><dd id="s-modules">&ndash;</dd>
+                <dt>Quiet zone</dt><dd id="s-quiet">&ndash;</dd>
+                <dt>Smallest usable print</dt><dd id="s-print">&ndash;</dd>
+                <dt>Scans from</dt><dd id="s-reach">&ndash;</dd>
               </dl>
               <div class="cap" id="cap" data-level="ok">
                 <div class="track"><div class="fill" id="cap-fill" style="width:0%"></div></div>
-                <div class="lab"><span id="cap-lab-a">&mdash;</span><span id="cap-lab-b">&mdash;</span></div>
+                <div class="lab"><span id="cap-lab-a">&ndash;</span><span id="cap-lab-b">&ndash;</span></div>
               </div>
               <div class="distrow">
                 <label for="distance">To be scanned from
                   <input type="number" id="distance" value="30" min="1" max="2000" step="5"> cm</label>
-                <span id="s-need">&mdash;</span>
+                <span id="s-need">&ndash;</span>
               </div>
               <div class="chips" id="printchips" style="margin-top:14px"></div>
               <div class="printrow" style="margin-top:12px">
@@ -297,7 +297,7 @@
             <textarea id="batchin" rows="10" spellcheck="false" placeholder="techbbq.org/a/auri, Auri Baciauskas
 techbbq.org/a/soren, S&oslash;ren &Aring;
 techbbq.org/a/bob, Bob"></textarea>
-            <span class="hint">Each line is <code>value</code> or <code>value, label</code>. A dropped CSV uses its first column as the value and its second as the label; a header row is detected and skipped.</span>
+            <span class="hint">Each line is <code>value</code> or <code>value, label</code>. A dropped CSV takes column one as the value, column two as the label, and skips a header row.</span>
           </div>
           <div class="dropzone" id="csvdrop" tabindex="0" role="button" aria-label="Choose or drop a CSV file">
             <span id="csvmsg">Drop a .csv here, or click to choose</span>
@@ -308,7 +308,7 @@ techbbq.org/a/bob, Bob"></textarea>
             <button type="button" class="btn outline" id="batchzip" disabled>Download ZIP</button>
             <button type="button" class="btn outline" id="batchprint" disabled>Print sheet</button>
           </div>
-          <p class="hint">Every code uses the style set on the Design tab, and each one is decoded before it is offered to you.</p>
+          <p class="hint">Codes use the style from the Design tab. Each one gets decoded before you download it.</p>
         </section>
       </div>
       <div class="panel">
@@ -327,12 +327,12 @@ techbbq.org/a/bob, Bob"></textarea>
       <div>
         <section class="block">
           <p class="eyebrow">Test the real thing</p>
-          <p class="lede">The scan check on the Design tab proves the image decodes. This proves the <em>printed</em> code decodes — hold a print, a screen or a badge up to the camera and see exactly what a scanner reads.</p>
+          <p class="lede">The Design tab checks the image. This checks the <em>print</em>. Hold a printed code up to the camera and read what a scanner reads.</p>
           <div class="batchbar">
             <button type="button" class="btn primary" id="camstart">Start camera</button>
             <button type="button" class="btn outline" id="camstop" disabled>Stop</button>
           </div>
-          <p class="hint">The video never leaves this page — decoding happens in your browser. Camera access needs <code>localhost</code> or HTTPS.</p>
+          <p class="hint">Decoding happens in your browser. The video is never uploaded. Camera access needs <code>localhost</code> or HTTPS.</p>
         </section>
       </div>
       <div class="panel">
@@ -350,9 +350,8 @@ techbbq.org/a/bob, Bob"></textarea>
   </main>
 
   <footer class="foot">
-    Styled on the TechBBQ design system — Onest and Inter, founder red <code>#CE0F2E</code>,
-    the warm brand gradient. Encoding by <code>qrcode-generator</code> (MIT), decoding by
-    <code>jsQR</code> (Apache-2.0), both vendored. SVG output is vector — use it for print.
+    Encoding and decoding both run in your browser. Nothing is uploaded.
+    For print, export SVG.
   </footer>
 
 </div>

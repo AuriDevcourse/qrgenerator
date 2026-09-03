@@ -1,5 +1,5 @@
 /* ============================================================
-   Quiet Zone — styled on the TechBBQ Design System
+   Quiet Zone, styled on the TechBBQ Design System
    Tokens copied from tdesignsystem/app/globals.css + public/brand/tokens.json
    TechBBQ runs dark, so this commits to the dark palette and paints every
    colour explicitly rather than inheriting a host theme.
@@ -11,7 +11,7 @@
   --red-orange: #ff2600;  /* launch */
   --orange:     #fa7000;  /* ignite */
   --amber:      #fd9d04;  /* spark */
-  --warn-ink:   #fd9d04;  /* warn text — darkened in the light theme */
+  --warn-ink:   #fd9d04;  /* warn text, darkened in the light theme */
 
   /* Dark semantic tokens */
   --background: #0d0d0d;
@@ -21,7 +21,7 @@
   --muted:      #9a9a9c;
   --border:     #2a2a2a;
 
-  /* Functional status accents — dots and badges only, never decorative */
+  /* Functional status accents: dots and badges only, never decorative */
   --success: #00c11a;
   --teal:    #10c8a7;
 
@@ -104,7 +104,7 @@ h1, h2, h3 { font-family: var(--font-heading); letter-spacing: -0.02em }
 
 /* ---- brand orb backdrop -------------------------------------------------
    Copied verbatim from tdesignsystem/app/globals.css. Used the way the system
-   uses it — an absolutely positioned backdrop inside a `position: relative;
+   uses it: an absolutely positioned backdrop inside a `position: relative;
    overflow: hidden` section, bold variant for a cover, with the bottom fade
    from components/brand/orb-backdrop.tsx.
    ------------------------------------------------------------------------- */
@@ -174,7 +174,7 @@ h1, h2, h3 { font-family: var(--font-heading); letter-spacing: -0.02em }
 
 /* ---- cover band ---------------------------------------------------------
    The orb ground is always near-black, so the cover carries the dark token
-   set whatever the page theme is — the system's `text-surface` sections.
+   set whatever the page theme is, matching the system's `text-surface` sections.
    ------------------------------------------------------------------------- */
 .cover {
   position: relative;
@@ -217,7 +217,7 @@ header.top { display: grid; gap: 10px }
 .brandline svg { width: 22px; height: auto; display: block; flex: none }
 .brandline h1 { font-size: 26px; font-weight: 600; margin: 0; text-wrap: balance }
 
-/* chip badge — rounded square, never a pill (pills are buttons) */
+/* chip badge: rounded square, never a pill (pills are buttons) */
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
   border: 1px solid var(--pill-line); background: var(--chip-bg);
@@ -309,7 +309,7 @@ section.block { margin-bottom: 30px }
 .ctrls { display: grid; gap: 18px; grid-template-columns: 1fr 1fr }
 @media (max-width: 580px) { .ctrls { grid-template-columns: 1fr } }
 
-/* segmented control — pill track, pill thumb (components/ui/segmented.tsx) */
+/* segmented control: pill track, pill thumb (components/ui/segmented.tsx) */
 .seg {
   display: inline-flex; align-items: center; gap: 4px;
   background: var(--card-2); border-radius: 9999px; padding: 4px;
@@ -374,7 +374,7 @@ input[type="file"] { font: 400 12px var(--font-body); color: var(--muted); max-w
   border-radius: var(--radius-md);
 }
 
-/* verdict — Tag pattern: coloured dot + uppercase label, state in the rule */
+/* verdict, Tag pattern: coloured dot plus uppercase label, state in the rule */
 .verdict {
   width: 100%; display: grid; gap: 7px;
   background: var(--card-2); border-radius: var(--radius-md);
@@ -439,7 +439,7 @@ input[type="file"] { font: 400 12px var(--font-body); color: var(--muted); max-w
   font-variant-numeric: tabular-nums; text-align: right;
 }
 
-/* notices — status carried by the dot, per the design system */
+/* notices: status carried by the dot, per the design system */
 .notices { display: grid; gap: 8px }
 .notice {
   display: grid; grid-template-columns: auto 1fr; gap: 3px 9px;
@@ -456,7 +456,7 @@ input[type="file"] { font: 400 12px var(--font-body); color: var(--muted); max-w
 .notice.crit b { color: var(--red) }
 .notice .dot { grid-column: 1; grid-row: 1 }
 .notice b { grid-column: 2; grid-row: 1 }
-/* the body text, not the dot — .dot is also a span */
+/* the body text, not the dot, which is also a span */
 .notice > span:not(.dot) { grid-column: 2; grid-row: 2; color: var(--muted) }
 
 /* A 2x2 grid rather than a wrapping flex row, so the fourth button never ends

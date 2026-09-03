@@ -1,5 +1,5 @@
 /*
- * zip.js — minimal store-only (uncompressed) ZIP writer.
+ * zip.js: minimal store-only (uncompressed) ZIP writer.
  * Runs in the browser (global `QRZip`) and in Node (module.exports).
  *
  * Store rather than deflate on purpose: no compressor to ship, and the payload

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * serve.mjs — zero-dependency static server for local development.
+ * serve.mjs: zero-dependency static server for local development.
  *
  * A server is required, not optional: the scan check draws the generated SVG to
  * a canvas and reads the pixels back, and on file:// the canvas is tainted, so
@@ -37,7 +37,7 @@ const server = createServer(async (req, res) => {
     // Any directory-ish path ('/', '//', '/dist/') resolves to its index.html.
     if (path.endsWith('/')) path += 'index.html';
 
-    // Keep requests inside ROOT — normalize first, then confirm the prefix.
+    // Keep requests inside ROOT: normalize first, then confirm the prefix.
     const file = join(ROOT, normalize(path).replace(/^(\.\.[/\\])+/, ''));
     if (!file.startsWith(ROOT)) {
       res.writeHead(403).end('Forbidden');
@@ -75,7 +75,7 @@ server.on('error', async (err) => {
   if (err.code !== 'EADDRINUSE') throw err;
 
   if (await alreadyOurs(PORT)) {
-    console.log(`Quiet Zone is already running — nothing to do.\n`);
+    console.log(`Quiet Zone is already running. Nothing to do.\n`);
     console.log(`  App        http://127.0.0.1:${PORT}/`);
     console.log(`  Self-test  http://127.0.0.1:${PORT}/verify.html\n`);
     process.exit(0);

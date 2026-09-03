@@ -1,4 +1,4 @@
-/* app.js — UI for Quiet Zone. Encoding and rendering live in qr-render.js. */
+/* app.js: UI for Quiet Zone. Encoding and rendering live in qr-render.js. */
 (function () {
   'use strict';
 
@@ -29,7 +29,7 @@
     text: [{ k: 'text', label: 'Text', type: 'textarea', wide: true }],
     wifi: [
       { k: 'ssid', label: 'Network name (SSID)' },
-      { k: 'auth', label: 'Security', type: 'select', opts: [['WPA', 'WPA / WPA2 / WPA3'], ['WEP', 'WEP'], ['nopass', 'Open — no password']] },
+      { k: 'auth', label: 'Security', type: 'select', opts: [['WPA', 'WPA / WPA2 / WPA3'], ['WEP', 'WEP'], ['nopass', 'Open (no password)']] },
       { k: 'password', label: 'Password' },
       { k: 'hidden', label: 'Hidden network', type: 'check' }
     ],
@@ -79,8 +79,8 @@
 
   var state = defaults();
 
-  // Only the look travels in a preset or a link — never the payload, and never
-  // an uploaded image (it would not fit in a URL).
+  // Presets and links carry the look only. Not the payload, and not an uploaded
+  // image, which would not fit in a URL.
   var STYLE_KEYS = ['ec', 'style', 'eyeStyle', 'margin', 'fg', 'bg',
     'gradOn', 'gradFrom', 'gradTo', 'gradAngle', 'eyeOn', 'eyeColor',
     'logoMode', 'logoMark', 'logoPct',
@@ -173,7 +173,7 @@
 
   function shareUrl() {
     // Carry only the fields the chosen type actually uses, and only when they
-    // hold something — otherwise every empty input bloats the link.
+    // hold something. Otherwise every empty input bloats the link.
     var used = {};
     (FIELDS[state.type] || []).forEach(function (d) {
       var v = state.data[d.k];
@@ -350,7 +350,7 @@
     if (!SIMPLE[state.type]) $('#detailblock').scrollIntoView({ block: 'nearest' });
   }
 
-  // Push state back into every control — used on load, on preset apply, on link restore.
+  // Push state back into every control: on load, on preset apply, on link restore.
   function syncControls() {
     $$('.seg').forEach(function (seg) {
       var key = seg.dataset.key;
@@ -418,7 +418,7 @@
     return state.logoMode === 'custom' && !!state.logoHref;
   }
 
-  // Render options from any style object — the live state, or a preset being
+  // Render options from any style object: the live state, or a preset being
   // previewed as a thumbnail.
   function optsFrom(st, logoHref) {
     var markOn = st.logoMode === 'mark';
@@ -471,8 +471,8 @@
     });
   }
 
-  // Decode a generated SVG. Resolves { ok, got, blocked } — `blocked` means the
-  // pixels could not be read at all (a file:// page taints the canvas).
+  // Decode a generated SVG. Resolves { ok, got, blocked }. `blocked` means the
+  // pixels could not be read at all, because a file:// page taints the canvas.
   function decodeCheck(svgStr, text, o) {
     var w = Math.min(2400, Math.max(720, R.recommendedPx(text, o)));
     var h = Math.round(w * R.dimensions(text, o).ratio);
@@ -503,14 +503,14 @@
     var max = R.MAX_BYTES[state.ec];
 
     if (!text) {
-      setVerdict('#verdict', 'warn', 'Nothing to encode', 'Fill in the field above and the code appears here.');
+      setVerdict('#verdict', 'warn', 'Nothing to encode', 'Type or paste something in the field above.');
       $('#raw').value = ''; setSpec(null, 0, max); setNotices([]);
       return;
     }
     if (bytes > max) {
       setVerdict('#verdict', 'crit', 'Too much data',
-        bytes + ' bytes exceeds the ' + max + '-byte ceiling at error correction ' + state.ec +
-        '. Shorten the content or drop to a lower correction level.');
+        bytes + ' bytes is over the ' + max + '-byte limit at error correction ' + state.ec +
+        '. Shorten the content, or drop to a lower correction level.');
       $('#raw').value = text; setSpec(null, bytes, max); setNotices([]);
       return;
     }
@@ -521,7 +521,7 @@
     lastSvg = R.svg(text, Object.assign({}, o, { px: 1024 }));
     setSpec(m, bytes, max);
     setNotices(collectNotices(m, bytes, max));
-    setVerdict('#verdict', '', 'Checking…', 'Re-reading the generated image.');
+    setVerdict('#verdict', '', 'Checking…', 'Decoding the image.');
 
     var w = Math.min(2400, Math.max(720, R.recommendedPx(text, o)));
     var h = Math.round(w * R.dimensions(text, o).ratio);
@@ -542,17 +542,17 @@
       try { px = ctx.getImageData(0, 0, w, h).data; }
       catch (e) {
         setVerdict('#verdict', 'warn', 'Scan check needs a local server',
-          'Run "npm start" and open http://127.0.0.1:8777 — reading the image back is blocked on file:// URLs. The code itself is fine.');
+          'Browsers block reading pixels back on file:// URLs. Run npm start and open http://127.0.0.1:8777. The code itself is fine.');
         return;
       }
       var got = window.jsQR(px, w, h);
       if (got && got.data === text) setVerdict('#verdict', 'ok', 'Scans correctly', got.data);
       else if (got) setVerdict('#verdict', 'crit', 'Decoded to the wrong value', got.data);
       else setVerdict('#verdict', 'crit', 'Could not be read back',
-        'A decoder failed on this image. Raise the error correction level, widen the quiet zone, increase contrast, or shrink the centre mark.');
+        'jsQR could not read this image. Raise the error correction level, widen the quiet zone, add contrast, or shrink the centre mark.');
     }).catch(function () {
       if (my !== token) return;
-      setVerdict('#verdict', 'crit', 'Render failed', 'The image could not be drawn.');
+      setVerdict('#verdict', 'crit', 'Render failed', 'The browser could not draw the image.');
     });
   }
 
@@ -568,22 +568,22 @@
   function setSpec(m, bytes, max) {
     var total = m ? m.size + state.margin * 2 : 0;
     var widthMm = total * MM_PER_MODULE;
-    $('#s-version').textContent = m ? 'version ' + m.version : '—';
-    $('#s-modules').textContent = m ? m.size + ' × ' + m.size : '—';
+    $('#s-version').textContent = m ? 'version ' + m.version : '–';
+    $('#s-modules').textContent = m ? m.size + ' × ' + m.size : '–';
     $('#s-quiet').textContent = state.margin + ' module' + (state.margin === 1 ? '' : 's');
-    $('#s-print').textContent = m ? widthMm.toFixed(1) + ' mm' : '—';
-    $('#s-reach').textContent = m ? '≈ ' + (widthMm * DISTANCE_RATIO / 10).toFixed(0) + ' cm' : '—';
+    $('#s-print').textContent = m ? widthMm.toFixed(1) + ' mm' : '–';
+    $('#s-reach').textContent = m ? '≈ ' + (widthMm * DISTANCE_RATIO / 10).toFixed(0) + ' cm' : '–';
 
     var needMm = m ? (state.distanceCm * 10) / DISTANCE_RATIO : 0;
     $('#s-need').textContent = m
       ? needMm.toFixed(0) + ' mm · ' + Math.round(needMm / 25.4 * 300) + ' px @300dpi'
-      : '—';
+      : '–';
 
     // One line carries what matters at a glance; the rest is behind a toggle.
     $('#readline').innerHTML = m
       ? '<b>v' + m.version + '</b> · ' + m.size + '×' + m.size + ' · min <b>' +
         widthMm.toFixed(0) + ' mm</b> · ' + bytes + '/' + max + ' bytes · EC ' + state.ec
-      : '&mdash;';
+      : '&ndash;';
 
     var pct = max ? Math.min(100, bytes / max * 100) : 0;
     $('#cap').dataset.level = pct > 100 ? 'crit' : pct > 85 ? 'warn' : 'ok';
@@ -602,11 +602,11 @@
     if (worst.ratio < 2.5) {
       out.push(['crit', 'Not enough contrast',
         (grad ? 'The weakest gradient stop (' + worst.colour + ') is ' : 'Foreground and background differ by only ') +
-        worst.ratio.toFixed(1) + ':1 against the background. Cameras need roughly 3:1 or more.']);
+        worst.ratio.toFixed(1) + ':1. Cameras need at least 3:1.']);
     } else if (worst.ratio < 4) {
       out.push(['warn', 'Contrast is marginal',
         (grad ? worst.colour + ' sits at ' : '') + worst.ratio.toFixed(1) +
-        ':1 — fine on screen, unreliable on paper or under poor light.']);
+        ':1 against the background. Paper and poor light need more.']);
     }
 
     var darkest = grad
@@ -619,14 +619,14 @@
 
     if (state.margin < 4) {
       out.push(['warn', 'Quiet zone below spec',
-        'The standard asks for 4 clear modules around the code; this has ' + state.margin + '.']);
+        'The standard asks for 4 clear modules around the code. This has ' + state.margin + '.']);
     }
 
     if (logoActive()) {
       if (state.ec !== 'H' && state.logoPct >= 0.18) {
         out.push(['warn', 'Raise correction for the mark',
           'The mark covers real data. At ' + Math.round(state.logoPct * 100) +
-          '% width, use error correction H so the code can rebuild what is hidden.']);
+          '% width, use error correction H so the code can rebuild it.']);
       }
       if (state.logoPct > 0.3) {
         out.push(['crit', 'Mark is too large',
@@ -636,17 +636,17 @@
 
     if (state.frameOn && R.contrast(state.frameTextColor, state.frameFill) < 3) {
       out.push(['warn', 'Caption is hard to read',
-        'The caption and frame colours are too close together.']);
+        'The caption and frame colours sit too close together.']);
     }
 
     if (state.type !== 'url' && R.hasNonAscii(payload())) {
       out.push(['warn', 'Non-ASCII text may not travel',
-        'Accented and non-Latin characters are written as raw UTF-8 without an encoding marker. Phone cameras handle it; some fixed scanners do not.']);
+        'The encoder writes accented and non-Latin characters as raw UTF-8 with no encoding marker. Phone cameras cope. Some fixed scanners do not.']);
     }
 
     if (bytes / max > 0.85) {
       out.push(['warn', 'Nearly full',
-        'This is close to the capacity ceiling, so the code is dense and needs to be printed larger.']);
+        'The code is near its byte limit, so the grid is dense. Print it larger than usual.']);
     }
     return out;
   }
@@ -714,7 +714,7 @@
     }
     note.classList.remove('bad');
     note.textContent = items.length + ' code' + (items.length === 1 ? '' : 's') +
-      ' at ' + mm + ' mm sent to the print view.';
+      ' at ' + mm + ' mm opened in the print view.';
 
     var cells = items.map(function (it) {
       return '<figure style="width:' + mm + 'mm">' + it.svg +
@@ -722,7 +722,7 @@
     }).join('');
 
     var doc = '<!doctype html><html><head><meta charset="utf-8">' +
-      '<title>Quiet Zone — print sheet</title><style>' +
+      '<title>Quiet Zone print sheet</title><style>' +
       '@page { size: A4; margin: 10mm }' +
       'body { margin: 0; font: 500 8pt Inter, Helvetica, Arial, sans-serif; color: #000;' +
       '  background: #fff }' +
@@ -736,8 +736,8 @@
       '@media print { .note { display: none } }' +
       '</style></head><body>' +
       '<p class="note">' + items.length + ' code' + (items.length === 1 ? '' : 's') +
-      ' at ' + mm + ' mm. Dashed lines are cut guides. Print at 100% scale — ' +
-      'any "fit to page" setting will change the physical size and the scanning distance with it.</p>' +
+      ' at ' + mm + ' mm. Dashed lines are cut guides. Print at 100% scale. ' +
+      'A "fit to page" setting changes the physical size, and the scanning distance with it.</p>' +
       '<div class="sheet">' + cells + '</div></body></html>';
 
     win.document.write(doc);
@@ -796,7 +796,7 @@
   function runBatch() {
     var rows = parseBatch($('#batchin').value);
     if (!rows.length) {
-      $('#batchsummary').textContent = 'Nothing to generate — add at least one line.';
+      $('#batchsummary').textContent = 'Nothing to generate. Add at least one line.';
       $('#batchgrid').innerHTML = '';
       return;
     }
@@ -864,7 +864,7 @@
     files.push({
       name: 'README.txt',
       data: 'Generated by Quiet Zone.\n' + files.length + ' codes, each decoded and verified ' +
-        'before export.\nSVG is vector — scale it freely for print.\n'
+        'before export.\nSVG is vector, so it scales to any print size.\n'
     });
     var bytes = QRZip.zip(files);
     saveBlob(new Blob([bytes], { type: 'application/zip' }),
@@ -879,7 +879,7 @@
   function camStart() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setVerdict('#camverdict', 'crit', 'No camera API',
-        'This browser does not expose a camera to the page.');
+        'This browser gives the page no camera to use.');
       return;
     }
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
@@ -1161,7 +1161,7 @@
 
     function readLogo(f) {
       if (!/^image\//.test(f.type)) {
-        $('#dropmsg').textContent = 'That is not an image — pick a PNG, JPG or SVG.';
+        $('#dropmsg').textContent = 'That is not an image. Pick a PNG, JPG or SVG.';
         return;
       }
       var fr = new FileReader();
@@ -1252,7 +1252,7 @@
       var fr = new FileReader();
       fr.onload = function () {
         $('#batchin').value = fr.result;
-        $('#csvmsg').textContent = f.name + ' — ' + parseBatch(fr.result).length + ' rows';
+        $('#csvmsg').textContent = f.name + ' · ' + parseBatch(fr.result).length + ' rows';
       };
       fr.readAsText(f);
     }
@@ -1273,8 +1273,8 @@
 
     // shortcuts
     document.addEventListener('keydown', function (e) {
-      // Never steal keys from something focusable — Enter on a focused button
-      // must press that button, not copy the code.
+      // Never steal keys from something focusable. Enter on a focused button
+      // must press that button rather than copy the code.
       if (e.target.closest('input, textarea, select, button, a, summary, [role="button"], [contenteditable]')) return;
       if (e.key === '/') {
         e.preventDefault();

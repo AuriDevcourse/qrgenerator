@@ -1,5 +1,5 @@
 /*
- * qr-render.js — matrix -> SVG path rendering for QR codes.
+ * qr-render.js: matrix -> SVG path rendering for QR codes.
  * Works in the browser (global `QRRender`) and in Node (module.exports).
  * Depends on qrcode-generator (vendor/qrcode.js) for the encoding itself.
  */
@@ -156,7 +156,7 @@
 
   /**
    * Build the drawing paths for a QR matrix.
-   * Returns { data, eyes, size } — all in module units, origin at the top-left
+   * Returns { data, eyes, size }, all in module units, origin at the top-left
    * of the quiet zone.
    */
   function paths(m, opts) {
@@ -194,7 +194,7 @@
           data.push(square(x, y));
         } else if (style === 'dots') {
           data.push(circlePath(x, y, 0.45));
-        } else { // rounded — only round corners with no orthogonal neighbour
+        } else { // rounded: only round corners with no orthogonal neighbour
           data.push(roundedCellPath(x, y, 0.35,
             dark(r - 1, c), dark(r + 1, c), dark(r, c - 1), dark(r, c + 1)));
         }
@@ -431,7 +431,7 @@
 
   function parseWifi(raw) {
     var out = { auth: 'WPA', ssid: '', password: '', hidden: false };
-    // WIFI:T:WPA;S:name;P:pass;H:true;;  — fields may arrive in any order.
+    // WIFI:T:WPA;S:name;P:pass;H:true;;  Fields may arrive in any order.
     String(raw).replace(/^WIFI:/i, '').split(/(?<!\\);/).forEach(function (part) {
       var m = /^([TSPH]):([\s\S]*)$/i.exec(part);
       if (!m) return;
@@ -531,7 +531,7 @@
     return a <= b ? { ratio: a, colour: grad.from } : { ratio: b, colour: grad.to };
   }
 
-  // Smallest raster width that keeps each module at `perModule` px — below
+  // Smallest raster width that keeps each module at `perModule` px. Below
   // roughly 4px/module, cameras and decoders start to struggle.
   function recommendedPx(text, opts) {
     opts = opts || {};
