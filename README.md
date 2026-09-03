@@ -8,7 +8,7 @@ Runs locally. Nothing to install, no account, no network.
 ```
 npm start          # http://127.0.0.1:8777
                    # http://127.0.0.1:8777/verify.html  (43-case decode suite)
-npm run build      # bundle into one standalone dist/quiet-zone.html
+npm run build      # bundle into dist/ as one standalone HTML file
 npm run batch -- people.csv --col url --name-col name --out ./out
 ```
 

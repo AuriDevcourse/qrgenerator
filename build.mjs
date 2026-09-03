@@ -52,5 +52,10 @@ ${read('./app.js')}
 `;
 
 mkdirSync(new URL('./dist/', import.meta.url), { recursive: true });
-writeFileSync(new URL('./dist/quiet-zone.html', import.meta.url), out);
-console.log(`dist/quiet-zone.html  ${(out.length / 1024).toFixed(0)} KB  (self-contained)`);
+
+// index.html so dist/ is a servable site root (Vercel points at it), and a named
+// copy for handing someone a single file.
+for (const name of ['index.html', 'quiet-zone.html']) {
+  writeFileSync(new URL(`./dist/${name}`, import.meta.url), out);
+}
+console.log(`dist/index.html + dist/quiet-zone.html  ${(out.length / 1024).toFixed(0)} KB  (self-contained)`);

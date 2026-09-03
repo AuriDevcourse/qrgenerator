@@ -7,9 +7,11 @@ QR code generator that verifies its own output. Vanilla JS, no framework.
 - **`qr-render.js` is UMD** and must load as CommonJS in Node. Do **not** add
   `"type": "module"` to `package.json`; it breaks the renderer and `batch.mjs`.
   `build.mjs` and `batch.mjs` are `.mjs`, so they are ESM by extension already.
-- **`dist/` is generated.** Edit `index.html` / `app.js` / `styles.css`, then
-  `npm run build`, which bundles them into one standalone `dist/quiet-zone.html`.
-  Never hand-edit that file.
+- **`dist/` is generated.** Edit `index.html`, `app.js` and `styles.css`, then
+  `npm run build`. It writes the same self-contained page twice:
+  `dist/index.html`, which Vercel serves as the site root, and
+  `dist/quiet-zone.html` for handing someone a single file. Never hand-edit
+  either. `vercel.json` points `outputDirectory` at `dist`.
 - **A server is required to run anything.** `npm start` (`serve.mjs`, no deps).
   The scan check reads canvas pixels back, which `file://` forbids, so the app
   reports "scan check unavailable" there rather than claiming a pass.
