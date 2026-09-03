@@ -159,6 +159,18 @@ These came out of `verify.html` and `probe.html`, not documentation:
   contrast check reports the worse stop and names it rather than averaging the
   two into a passing number.
 
+## Tracking and redirects
+
+Campaign tags (`utm_source` and friends) are appended to a link, alongside the
+existing query string and the expiry parameter, with one `?` and correct encoding.
+
+**Print once, change the destination later.** Point the code at a page you host
+and let that page forward. "Save redirect page" writes a self-contained HTML file:
+put it at the address the code encodes and you can edit where it goes without
+reprinting. Set a date under Expiry and the page refuses to forward after it,
+which is what turns an expiry from a note into something enforced. No server, no
+subscription, no service that can disappear.
+
 ## Expiry
 
 A QR code cannot expire. The pattern is fixed once printed and decodes to the same

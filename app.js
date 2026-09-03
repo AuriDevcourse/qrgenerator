@@ -76,6 +76,8 @@
       markColor: '#10c8a7',
       logoPlate: false, logoPlateColor: '#ffffff', logoPad: 0.5,
       expiry: '', expiryInLink: false,
+      utm: { source: '', medium: '', campaign: '', content: '' },
+      redirectTo: '',
       distanceCm: 30
     };
   }
@@ -485,6 +487,10 @@
     $('#plateopts').hidden = !state.logoPlate;
     $('#logoplatecolor').value = state.logoPlateColor;
     $('#logoplatecolor-val').value = state.logoPlateColor;
+    ['source', 'medium', 'campaign', 'content'].forEach(function (k) {
+      $('#utm_' + k).value = state.utm[k] || '';
+    });
+    $('#redirdest').value = state.redirectTo || '';
     $('#logopad').value = state.logoPad;
     $('#logopad-val').value = Number(state.logoPad).toFixed(1);
     syncSummaries();
@@ -547,9 +553,15 @@
   function payload() {
     var out;
     try { out = R.payload[state.type](state.data) || ''; } catch (e) { return ''; }
-    // Only a link can carry a query parameter, and only your own server reads it.
-    if (out && state.type === 'url' && state.expiryInLink && state.expiry) {
-      out += (out.indexOf('?') === -1 ? '?' : '&') + 'exp=' + state.expiry;
+    if (out && state.type === 'url') {
+      var extra = [];
+      ['source', 'medium', 'campaign', 'content'].forEach(function (k) {
+        var v = (state.utm[k] || '').trim();
+        if (v) extra.push('utm_' + k + '=' + encodeURIComponent(v));
+      });
+      // Only a link can carry a query parameter, and only your own server reads exp.
+      if (state.expiryInLink && state.expiry) extra.push('exp=' + state.expiry);
+      if (extra.length) out += (out.indexOf('?') === -1 ? '?' : '&') + extra.join('&');
     }
     return out;
   }
@@ -736,6 +748,28 @@
     if (past.at >= past.stack.length - 1) return;
     past.at++;
     restore(past.stack[past.at]);
+  }
+
+  // ---- redirect page ------------------------------------------------------
+  //
+  // The honest version of a "dynamic" QR code without a server: the code points
+  // at a page you host, and that page forwards. Edit the page, not the print.
+  // It also makes the expiry date real, because the page can refuse to forward.
+
+  function saveRedirect() {
+    var dest = R.payload.url({ url: $('#redirdest').value });
+    var note = $('#redirnote');
+    if (!dest) {
+      note.textContent = 'Give it a destination first.';
+      note.classList.add('bad');
+      return;
+    }
+    note.classList.remove('bad');
+    var html = R.redirectPage(dest, state.expiry || null);
+    saveBlob(new Blob([html], { type: 'text/html' }), 'redirect.html');
+    note.textContent = 'Saved redirect.html. Put it at ' + (payload() || 'the address this code encodes') +
+      ' and it forwards to ' + dest +
+      (state.expiry ? ', until ' + state.expiry + '.' : '.');
   }
 
   // ---- reading an uploaded mark -------------------------------------------
@@ -1839,6 +1873,15 @@
       state.logoMark = b.dataset.mark;
       renderMarkVars(); syncLogoUi(); syncSummaries(); render();
     });
+
+    ['source', 'medium', 'campaign', 'content'].forEach(function (k) {
+      $('#utm_' + k).addEventListener('input', function (e) {
+        state.utm[k] = e.target.value;
+        render();
+      });
+    });
+    $('#redirdest').addEventListener('input', function (e) { state.redirectTo = e.target.value; });
+    $('#redirsave').addEventListener('click', saveRedirect);
 
     $('#uselogocolour').addEventListener('click', function () {
       if (!logoInfo) return;

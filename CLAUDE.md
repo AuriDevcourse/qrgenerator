@@ -117,6 +117,23 @@ back. `verify.html` and the code comments keep the spec terms; the UI does not.
 One accuracy note: the capacity label says **bytes**, not characters. Danish
 `æ` costs two, so "characters" would be wrong.
 
+## Generating HTML is where the injections live
+
+`R.redirectPage()` writes a page from a user-supplied destination, so it is in
+`qr-render.js` rather than `app.js` purely to be unit-testable, and three
+assertions in `verify.html` cover it.
+
+- **`JSON.stringify` is not enough for a string inside a `<script>`.** It leaves
+  a literal closing script tag intact, which ends the element and turns the rest
+  into markup. `jsString()` escapes `<`, `>` and `&` as unicode. My first version
+  shipped two script elements for a hostile destination.
+- **The same trap bit the test file.** A comment in `verify.html` containing that
+  closing tag terminated the inline script and hung the whole suite at
+  "running...". No inline script block may contain the sequence, comments
+  included.
+- The destination reaches an href, a JS string and visible text. Each gets its
+  own encoding; do not reuse one for all three.
+
 ## Uploaded marks
 
 `inspectLogo()` samples the image at 40x40, buckets colours 32 per channel and

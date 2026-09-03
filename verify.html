@@ -152,6 +152,7 @@ CASES.push({ name: 'max-ish 2900 @ EC L', text: 'A'.repeat(2900), ec: 'L' });
     // a crafted share link put an unescaped colour into an SVG attribute and
     // into innerHTML, and it executed.
     var HOSTILE = '#000" onload="boom()';
+    var HOSTILE_URL = 'https://evil.test/"><' + 'script>steal()</' + 'script><a x="';
     var HARD = [
       ['renderer escapes fg', function () {
         return !hasRawQuoteInAttr(QRRender.svg('x', { fg: HOSTILE, px: 120 }));
@@ -172,6 +173,17 @@ CASES.push({ name: 'max-ish 2900 @ EC L', text: 'A'.repeat(2900), ec: 'L' });
       ['renderer escapes the mark colour', function () {
         return !hasRawQuoteInAttr(QRRender.svg('x', {
           logoMark: 'tbbq-custom', markColor: HOSTILE, logoPct: 0.2, ec: 'H', px: 120 }));
+      }],
+      ['redirect page escapes attributes', function () {
+        return !hasRawQuoteInAttr(QRRender.redirectPage(HOSTILE_URL, null));
+      }],
+      ['redirect page cannot close its own script', function () {
+        // JSON.stringify leaves a literal closing script tag intact, and that
+        // tag ends the element it sits in. This comment cannot contain one either.
+        return (QRRender.redirectPage(HOSTILE_URL, null).match(/<script/g) || []).length === 1;
+      }],
+      ['redirect page keeps markup out of the JS string', function () {
+        return QRRender.redirectPage(HOSTILE_URL, null).indexOf('<' + 'script>steal') === -1;
       }],
       ['caption text cannot open a tag', function () {
         return QRRender.svg('x', { frame: { text: '<script>boom()</' + 'script>' }, px: 120 })

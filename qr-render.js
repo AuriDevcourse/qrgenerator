@@ -530,6 +530,48 @@
     return { type: 'text', data: { text: v } };
   }
 
+  // JSON.stringify does not escape "</script>", which terminates the script
+  // element it sits in and turns the rest into markup. Escaping < > & as unicode
+  // keeps the string inert wherever it is embedded.
+  function jsString(v) {
+    return JSON.stringify(String(v == null ? '' : v))
+      .replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
+  }
+
+  function htmlAttr(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function redirectPage(dest, until) {
+    // dest reaches an href, a JS string and visible text. Each gets its own
+    // encoding rather than one pass reused three ways.
+    var a = htmlAttr(dest);
+    var js = jsString(dest);
+    var gate = until
+      ? 'var until=' + jsString(until) + ';\n' +
+        'if (new Date().toISOString().slice(0,10) > until) {\n' +
+        '  document.title = "This link has expired";\n' +
+        '  document.body.innerHTML = "<h1>This link has expired<\\/h1>" +\n' +
+        '    "<p>It stopped forwarding on ' + htmlAttr(until) + '.<\\/p>";\n' +
+        '} else { location.replace(' + js + '); }'
+      : 'location.replace(' + js + ');';
+
+    return '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+      '<title>Taking you there</title>\n' +
+      (until ? '' : '<meta http-equiv="refresh" content="0;url=' + a + '">\n') +
+      '<style>\n' +
+      '  body { margin:0; min-height:100vh; display:grid; place-items:center;\n' +
+      '         font:400 16px/1.5 Inter,Helvetica,Arial,sans-serif;\n' +
+      '         background:#0d0d0d; color:#f2f2f2; text-align:center; padding:24px }\n' +
+      '  a { color:#ce0f2e }\n  h1 { font-size:20px; margin:0 0 8px }\n' +
+      '</style>\n</head>\n<body>\n' +
+      '<div><p>Taking you to <a href="' + a + '">' + a + '</a></p></div>\n' +
+      '<script>\n' + gate + '\n</' + 'script>\n</body>\n</html>\n';
+  }
+
   // ---- misc ---------------------------------------------------------------
 
   // WCAG-style relative luminance, used for the contrast check.
@@ -579,6 +621,7 @@
     svg: svg,
     payload: payload,
     detect: detect,
+    redirectPage: redirectPage,
     parseWifi: parseWifi,
     parseVcard: parseVcard,
     TYPE_LABELS: LABELS,

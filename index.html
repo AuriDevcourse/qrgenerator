@@ -183,6 +183,38 @@
           </div>
         </details>
 
+        <details class="group" id="trackgroup">
+          <summary>Tracking and redirects</summary>
+          <div class="groupbody">
+            <p class="hint">Campaign tags are appended to the link, so they apply to the
+              Link type only.</p>
+            <div class="fields two">
+              <div class="field"><label for="utm_source">Source</label>
+                <input type="text" id="utm_source" placeholder="poster" autocomplete="off"></div>
+              <div class="field"><label for="utm_medium">Medium</label>
+                <input type="text" id="utm_medium" placeholder="qr" autocomplete="off"></div>
+              <div class="field"><label for="utm_campaign">Campaign</label>
+                <input type="text" id="utm_campaign" placeholder="techbbq-2026" autocomplete="off"></div>
+              <div class="field"><label for="utm_content">Content</label>
+                <input type="text" id="utm_content" placeholder="entrance-banner" autocomplete="off"></div>
+            </div>
+
+            <div class="callout topgap">
+              <b>Print once, change the destination later.</b>
+              Point the code at a page you host and let that page forward. Save the page
+              below, put it at the address the code encodes, and you can edit where it
+              goes without reprinting. Set a date under Expiry and the page stops
+              forwarding after it, which is what makes an expiry real.
+            </div>
+            <div class="field">
+              <label for="redirdest">Where it should actually go</label>
+              <input type="text" id="redirdest" placeholder="techbbq.org/tickets-2026" autocomplete="off" spellcheck="false">
+            </div>
+            <button type="button" class="btn outline" id="redirsave">Save redirect page</button>
+            <p class="hint" id="redirnote"></p>
+          </div>
+        </details>
+
         <details class="group" id="comparegroup">
           <summary>Compare shapes <span class="sumtxt" aria-hidden="true">9 looks</span></summary>
           <div class="groupbody">
