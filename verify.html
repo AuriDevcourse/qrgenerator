@@ -63,6 +63,8 @@ CASES.push({ name: 'logo 20% + EC H', text: 'https://techbbq.org', ec: 'H', styl
   CASES.push({ name: 'TBBQ mark ' + Math.round(pct * 100) + '%', text: 'https://techbbq.org/tickets',
     ec: 'H', style: 'rounded', eyeStyle: 'rounded', logoMark: 'tbbq-gradient', logoPct: pct });
 });
+CASES.push({ name: 'TBBQ mark, custom colour', text: 'https://techbbq.org/tickets', ec: 'H',
+  style: 'rounded', eyeStyle: 'rounded', logoMark: 'tbbq-custom', markColor: '#10c8a7', logoPct: 0.22 });
 CASES.push({ name: 'TBBQ mark, dots+circle', text: 'https://techbbq.org/tickets', ec: 'H',
   style: 'dots', eyeStyle: 'circle', logoMark: 'tbbq-red', logoPct: 0.22 });
 CASES.push({ name: 'TBBQ mark 35% (over limit)', text: 'https://techbbq.org/tickets', ec: 'H',

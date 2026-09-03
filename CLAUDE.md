@@ -84,6 +84,16 @@ is built. Keep it that way:
   and ignite orange 2.84:1, so neither gets a chip. Check with
   `R.contrast(colour, '#ffffff')` before adding one.
 
+## Expiry is honest, keep it that way
+
+A static QR code cannot expire, and the UI says so in the group itself. The date
+does two real things: it appends `?exp=` to a link payload when asked, and it
+drives the reprint reminder in the readout. Do not reword the callout into
+something that implies the code stops working, and do not add an "expired" state
+that blocks generation. Expiry lives in `state.expiry` / `state.expiryInLink`,
+travels in a shared link under `x`, and stays out of `STYLE_KEYS` because it is
+content rather than look.
+
 ## Adding a payload type
 
 1. Add a builder to `payload` in `qr-render.js`.

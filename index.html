@@ -94,43 +94,46 @@
         <p class="eyebrow">Customise</p>
 
         <details class="group">
-          <summary>Colour</summary>
+          <summary>Colour <span class="sumdots" id="sum-colour"></span></summary>
           <div class="groupbody">
             <div class="chips" id="colorchips"></div>
-            <div class="ctrls">
-              <div class="field">
-                <label>Modules and background</label>
-                <div class="swatches">
-                  <span class="swatch"><input type="color" id="fg" value="#ce0f2e" aria-label="Module colour"></span>
-                  <span class="swatch-val" id="fg-val">#ce0f2e</span>
-                  <span class="swatch"><input type="color" id="bg" value="#ffffff" aria-label="Background colour"></span>
-                  <span class="swatch-val" id="bg-val">#ffffff</span>
-                </div>
-                <span class="hint">Scanners expect dark modules on a light ground.</span>
+
+            <div class="swatchrow">
+              <label for="fg">Modules <span class="what">the squares that carry the data</span></label>
+              <span class="swatch"><input type="color" id="fg" value="#ce0f2e"></span>
+              <span class="swatch-val" id="fg-val">#ce0f2e</span>
+            </div>
+            <div class="swatchrow">
+              <label for="bg">Background <span class="what">behind the squares, including the quiet zone</span></label>
+              <span class="swatch"><input type="color" id="bg" value="#ffffff"></span>
+              <span class="swatch-val" id="bg-val">#ffffff</span>
+            </div>
+            <p class="hint">Scanners expect dark modules on a light background.</p>
+
+            <label class="check topgap"><input type="checkbox" id="gradon"> Fade the modules between two colours</label>
+            <div id="gradopts" hidden>
+              <div class="swatchrow">
+                <label for="gradfrom">Fade from <span class="what">top-left end of the fade</span></label>
+                <span class="swatch"><input type="color" id="gradfrom" value="#fa7000"></span>
+                <span class="swatch-val" id="gradfrom-val">#fa7000</span>
               </div>
-              <div class="field">
-                <label class="check"><input type="checkbox" id="gradon"> Gradient fill</label>
-                <div id="gradopts" hidden>
-                  <div class="swatches">
-                    <span class="swatch"><input type="color" id="gradfrom" value="#fa7000" aria-label="Gradient start"></span>
-                    <span class="swatch-val" id="gradfrom-val">#fa7000</span>
-                    <span class="swatch"><input type="color" id="gradto" value="#ce0f2e" aria-label="Gradient end"></span>
-                    <span class="swatch-val" id="gradto-val">#ce0f2e</span>
-                  </div>
-                  <div class="range" style="margin-top:10px">
-                    <div class="row"><label for="gradangle">Angle</label><output id="gradangle-val">120&deg;</output></div>
-                    <input type="range" id="gradangle" min="0" max="359" step="5" value="120">
-                  </div>
-                </div>
+              <div class="swatchrow">
+                <label for="gradto">Fade to <span class="what">bottom-right end of the fade</span></label>
+                <span class="swatch"><input type="color" id="gradto" value="#ce0f2e"></span>
+                <span class="swatch-val" id="gradto-val">#ce0f2e</span>
               </div>
-              <div class="field">
-                <label class="check"><input type="checkbox" id="eyeon"> Separate eye colour</label>
-                <div id="eyeopts" hidden>
-                  <div class="swatches">
-                    <span class="swatch"><input type="color" id="eyecolor" value="#0d0d0d" aria-label="Eye colour"></span>
-                    <span class="swatch-val" id="eyecolor-val">#0d0d0d</span>
-                  </div>
-                </div>
+              <div class="range">
+                <div class="row"><label for="gradangle">Fade direction</label><output id="gradangle-val">120&deg;</output></div>
+                <input type="range" id="gradangle" min="0" max="359" step="5" value="120">
+              </div>
+            </div>
+
+            <label class="check topgap"><input type="checkbox" id="eyeon"> Colour the three corner squares separately</label>
+            <div id="eyeopts" hidden>
+              <div class="swatchrow">
+                <label for="eyecolor">Corner squares <span class="what">the three big finder squares</span></label>
+                <span class="swatch"><input type="color" id="eyecolor" value="#0d0d0d"></span>
+                <span class="swatch-val" id="eyecolor-val">#0d0d0d</span>
               </div>
             </div>
           </div>
@@ -177,16 +180,24 @@
         </details>
 
         <details class="group">
-          <summary>Centre mark</summary>
+          <summary>Centre mark <span class="sumdots" id="sum-mark"></span></summary>
           <div class="groupbody">
             <div class="field">
               <div class="seg" data-key="logoMode" role="radiogroup" aria-label="Centre mark source">
                 <button type="button" data-val="none" aria-pressed="true">None</button>
                 <button type="button" data-val="mark" aria-pressed="false">TechBBQ mark</button>
-                <button type="button" data-val="custom" aria-pressed="false">Upload</button>
+                <button type="button" data-val="custom" aria-pressed="false">Your image</button>
               </div>
               <div class="logo-opts" id="logo-opts" hidden>
-                <div class="types small" id="markvars"></div>
+                <div id="markrow" hidden>
+                  <label class="sublabel">Mark colour</label>
+                  <div class="types small" id="markvars"></div>
+                  <div class="swatchrow" id="markcolorrow" hidden>
+                    <label for="markcolor">Mark colour <span class="what">any colour you like</span></label>
+                    <span class="swatch"><input type="color" id="markcolor" value="#10c8a7"></span>
+                    <span class="swatch-val" id="markcolor-val">#10c8a7</span>
+                  </div>
+                </div>
                 <div id="uploadrow" hidden>
                   <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose or drop an image">
                     <span id="dropmsg">Drop an image here, or click to choose</span>
@@ -204,7 +215,7 @@
         </details>
 
         <details class="group">
-          <summary>Caption frame</summary>
+          <summary>Caption frame <span class="sumdots" id="sum-frame"></span></summary>
           <div class="groupbody">
             <div class="field">
               <label class="check"><input type="checkbox" id="frameon"> Add a caption frame</label>
@@ -214,16 +225,48 @@
                   <input type="text" id="frametext" value="SCAN ME" maxlength="40">
                 </div>
                 <div class="field">
-                  <label>Frame and text colour</label>
-                  <div class="swatches">
-                    <span class="swatch"><input type="color" id="framefill" value="#ce0f2e" aria-label="Frame colour"></span>
+                  <div class="swatchrow">
+                    <label for="framefill">Frame <span class="what">the band around and under the code</span></label>
+                    <span class="swatch"><input type="color" id="framefill" value="#ce0f2e"></span>
                     <span class="swatch-val" id="framefill-val">#ce0f2e</span>
-                    <span class="swatch"><input type="color" id="frametextcolor" value="#ffffff" aria-label="Caption colour"></span>
+                  </div>
+                  <div class="swatchrow">
+                    <label for="frametextcolor">Caption text <span class="what">the words in the band</span></label>
+                    <span class="swatch"><input type="color" id="frametextcolor" value="#ffffff"></span>
                     <span class="swatch-val" id="frametextcolor-val">#ffffff</span>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </details>
+
+        <details class="group">
+          <summary>Expiry <span class="sumdots" id="sum-expiry"></span></summary>
+          <div class="groupbody">
+            <div class="callout">
+              <b>A QR code cannot expire by itself.</b>
+              The pattern is fixed once printed and keeps decoding to the same string for
+              ever. What you set here does two things: it tags the link so whatever serves
+              that URL can turn it off, and it tells you when to reprint.
+            </div>
+
+            <div class="field">
+              <label for="expiry">Valid until</label>
+              <input type="date" id="expiry">
+              <span class="hint" id="expiryinfo">No date set.</span>
+            </div>
+
+            <label class="check topgap">
+              <input type="checkbox" id="expiryinlink">
+              Add <code>?exp=</code> to the link
+            </label>
+            <p class="hint">Appends the date as a query parameter, so your own redirect or
+              landing page can check it and stop serving the destination. Nothing outside
+              your control reads it. Links only.</p>
+
+            <p class="hint topgap">For anything printed, point the code at a URL you control
+              and redirect from there. Then the destination can move without reprinting.</p>
           </div>
         </details>
 
@@ -262,6 +305,7 @@
                 <dt>Quiet zone</dt><dd id="s-quiet">&ndash;</dd>
                 <dt>Smallest usable print</dt><dd id="s-print">&ndash;</dd>
                 <dt>Scans from</dt><dd id="s-reach">&ndash;</dd>
+                <dt>Valid until</dt><dd id="s-expiry">&ndash;</dd>
               </dl>
               <div class="cap" id="cap" data-level="ok">
                 <div class="track"><div class="fill" id="cap-fill" style="width:0%"></div></div>

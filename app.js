@@ -73,6 +73,8 @@
       eyeOn: false, eyeColor: '#0d0d0d',
       logoMode: 'none', logoMark: 'tbbq-gradient', logoHref: null, logoPct: 0.2,
       frameOn: false, frameText: 'SCAN ME', frameFill: '#ce0f2e', frameTextColor: '#ffffff',
+      markColor: '#10c8a7',
+      expiry: '', expiryInLink: false,
       distanceCm: 30
     };
   }
@@ -83,7 +85,7 @@
   // image, which would not fit in a URL.
   var STYLE_KEYS = ['ec', 'style', 'eyeStyle', 'margin', 'fg', 'bg',
     'gradOn', 'gradFrom', 'gradTo', 'gradAngle', 'eyeOn', 'eyeColor',
-    'logoMode', 'logoMark', 'logoPct',
+    'logoMode', 'logoMark', 'logoPct', 'markColor',
     'frameOn', 'frameText', 'frameFill', 'frameTextColor'];
 
   var BUILTIN_PRESETS = [
@@ -180,6 +182,7 @@
       if (v !== '' && v !== null && v !== undefined && v !== false) used[d.k] = v;
     });
     var payload = { s: styleOf(state), t: state.type, d: used };
+    if (state.expiry) payload.x = { e: state.expiry, l: state.expiryInLink };
     return location.origin + location.pathname + '#' + b64urlEncode(JSON.stringify(payload));
   }
 
@@ -192,6 +195,7 @@
       if (obj.s) STYLE_KEYS.forEach(function (k) {
         if (obj.s[k] !== undefined) state[k] = obj.s[k];
       });
+      if (obj.x) { state.expiry = obj.x.e || ''; state.expiryInLink = !!obj.x.l; }
     } catch (e) { /* a malformed link just falls back to defaults */ }
   }
 
@@ -392,12 +396,48 @@
     renderMarkVars();
     renderColourChips();
     syncQuick();
+    $('#markcolor').value = state.markColor;
+    $('#markcolor-val').textContent = state.markColor;
+    $('#expiry').value = state.expiry;
+    $('#expiryinlink').checked = state.expiryInLink;
+    $('#expiryinfo').textContent = expiryLabel();
+    syncSummaries();
+  }
+
+  // Swatches in the closed summaries, so the current colours are visible
+  // without opening every group.
+  function dot(c) {
+    return '<span class="sumdot" style="background:' + c + '"></span>';
+  }
+
+  function syncSummaries() {
+    $('#sum-colour').innerHTML = state.gradOn
+      ? '<span class="sumdot" style="background:linear-gradient(120deg,' + state.gradFrom + ',' + state.gradTo + ')"></span>' + dot(state.bg)
+      : dot(state.fg) + dot(state.bg);
+    if (state.eyeOn) $('#sum-colour').innerHTML += dot(state.eyeColor);
+
+    var m = R.MARKS[state.logoMark];
+    $('#sum-mark').innerHTML = state.logoMode === 'none' ? ''
+      : state.logoMode === 'custom' ? '<span class="sumtxt">your image</span>'
+      : (m && m.fill === 'gradient'
+          ? '<span class="sumdot" style="background:linear-gradient(120deg,#f58022,#ee2242)"></span>'
+          : dot(m && m.fill === 'custom' ? state.markColor : (m ? m.fill : '#000')));
+
+    $('#sum-frame').innerHTML = state.frameOn
+      ? dot(state.frameFill) + dot(state.frameTextColor)
+      : '';
+
+    var n = daysUntil(state.expiry);
+    $('#sum-expiry').innerHTML = n === null ? ''
+      : '<span class="sumtxt' + (n < 0 ? ' bad' : '') + '">' +
+        (n < 0 ? 'passed' : n + ' day' + (n === 1 ? '' : 's')) + '</span>';
   }
 
   function syncLogoUi() {
     $('#logo-opts').hidden = state.logoMode === 'none';
-    $('#markvars').hidden = state.logoMode !== 'mark';
+    $('#markrow').hidden = state.logoMode !== 'mark';
     $('#uploadrow').hidden = state.logoMode !== 'custom';
+    $('#markcolorrow').hidden = !(state.logoMode === 'mark' && state.logoMark === 'tbbq-custom');
   }
 
   function forceEcH() {
@@ -410,7 +450,33 @@
   // ---- payload and options ------------------------------------------------
 
   function payload() {
-    try { return R.payload[state.type](state.data) || ''; } catch (e) { return ''; }
+    var out;
+    try { out = R.payload[state.type](state.data) || ''; } catch (e) { return ''; }
+    // Only a link can carry a query parameter, and only your own server reads it.
+    if (out && state.type === 'url' && state.expiryInLink && state.expiry) {
+      out += (out.indexOf('?') === -1 ? '?' : '&') + 'exp=' + state.expiry;
+    }
+    return out;
+  }
+
+  // Whole days from today until the date, negative once it has passed.
+  function daysUntil(iso) {
+    if (!iso) return null;
+    var d = new Date(iso + 'T00:00:00');
+    if (isNaN(d)) return null;
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Math.round((d - today) / 86400000);
+  }
+
+  function expiryLabel() {
+    var n = daysUntil(state.expiry);
+    if (n === null) return 'No date set.';
+    var when = new Date(state.expiry + 'T00:00:00')
+      .toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    if (n < 0) return when + '. Passed ' + (-n) + ' day' + (-n === 1 ? '' : 's') + ' ago.';
+    if (n === 0) return when + '. That is today.';
+    return when + '. ' + n + ' day' + (n === 1 ? '' : 's') + ' from now.';
   }
 
   function logoActive() {
@@ -431,6 +497,7 @@
       eyeColor: st.eyeOn ? st.eyeColor : null,
       logoPct: on ? st.logoPct : 0,
       logoMark: markOn ? st.logoMark : null,
+      markColor: st.markColor,
       logoHref: customOn ? logoHref : null,
       frame: st.frameOn
         ? { text: st.frameText, fill: st.frameFill, textColor: st.frameTextColor }
@@ -579,10 +646,16 @@
       ? needMm.toFixed(0) + ' mm · ' + Math.round(needMm / 25.4 * 300) + ' px @300dpi'
       : '–';
 
+    var exp = daysUntil(state.expiry);
+    $('#s-expiry').textContent = state.expiry ? expiryLabel() : '–';
+    $('#expiryinfo').textContent = expiryLabel();
+
     // One line carries what matters at a glance; the rest is behind a toggle.
     $('#readline').innerHTML = m
       ? '<b>v' + m.version + '</b> · ' + m.size + '×' + m.size + ' · min <b>' +
-        widthMm.toFixed(0) + ' mm</b> · ' + bytes + '/' + max + ' bytes · EC ' + state.ec
+        widthMm.toFixed(0) + ' mm</b> · ' + bytes + '/' + max + ' bytes · EC ' + state.ec +
+        (exp === null ? '' : ' · <b' + (exp < 0 ? ' class="bad"' : '') + '>' +
+          (exp < 0 ? 'expired' : exp + 'd left') + '</b>')
       : '&ndash;';
 
     var pct = max ? Math.min(100, bytes / max * 100) : 0;
@@ -642,6 +715,15 @@
     if (state.type !== 'url' && R.hasNonAscii(payload())) {
       out.push(['warn', 'Non-ASCII text may not travel',
         'The encoder writes accented and non-Latin characters as raw UTF-8 with no encoding marker. Phone cameras cope. Some fixed scanners do not.']);
+    }
+
+    var expDays = daysUntil(state.expiry);
+    if (expDays !== null && expDays < 0) {
+      out.push(['crit', 'The valid-until date has passed',
+        'Printed copies still scan and still reach the destination. Turn the link off at your end, or reprint.']);
+    } else if (expDays !== null && expDays <= 14) {
+      out.push(['warn', 'Expires soon',
+        expDays === 0 ? 'The date you set is today.' : expDays + ' days left. Plan the reprint.']);
     }
 
     if (bytes / max > 0.85) {
@@ -1098,7 +1180,7 @@
       $(p[0]).addEventListener('input', function (e) {
         state[p[1]] = e.target.value;
         $(p[0] + '-val').textContent = e.target.value;
-        render();
+        syncSummaries(); render();
       });
     });
 
@@ -1108,7 +1190,7 @@
       $(t[0]).addEventListener('change', function (e) {
         state[t[1]] = e.target.checked;
         $(t[2]).hidden = !e.target.checked;
-        render();
+        syncSummaries(); render();
       });
     });
 
@@ -1134,7 +1216,23 @@
       var b = e.target.closest('button[data-mark]');
       if (!b) return;
       state.logoMark = b.dataset.mark;
-      renderMarkVars(); render();
+      renderMarkVars(); syncLogoUi(); syncSummaries(); render();
+    });
+
+    $('#markcolor').addEventListener('input', function (e) {
+      state.markColor = e.target.value;
+      $('#markcolor-val').textContent = e.target.value;
+      syncSummaries(); render();
+    });
+
+    $('#expiry').addEventListener('input', function (e) {
+      state.expiry = e.target.value;
+      $('#expiryinfo').textContent = expiryLabel();
+      syncSummaries(); render();
+    });
+    $('#expiryinlink').addEventListener('change', function (e) {
+      state.expiryInLink = e.target.checked;
+      syncSummaries(); render();
     });
 
     // centre-mark upload, click or drop

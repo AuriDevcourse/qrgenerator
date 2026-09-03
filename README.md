@@ -33,7 +33,14 @@ a phone number, coordinates, a `WIFI:` string or a whole vCard, and it works out
 which one you gave it and fills the right fields. A Wi-Fi string arrives as
 network, password and security rather than raw text.
 
-The rest folds away: colour, shape and correction, centre mark, caption frame.
+Every colour control names what it changes: modules are "the squares that carry
+the data", background is "behind the squares, including the quiet zone". Closed
+groups show their current colours as swatches in the header, so you can see the
+palette without opening anything. The TechBBQ mark comes in gradient, founder red,
+white, black or any colour you pick.
+
+The rest folds away: colour, shape and correction, centre mark, caption frame,
+expiry.
 Each preset draws itself as a thumbnail so you can pick a look by eye. Colour
 comes as one-click brand pairs, print size as sticker/badge/flyer/poster/banner
 rather than millimetres. Your last eight codes sit one click away. Every change
@@ -124,6 +131,22 @@ These came out of `verify.html` and `probe.html`, not documentation:
   is 2.84:1 on white, under the 3:1 floor, where `#ce0f2e` is 5.63:1. The
   contrast check reports the worse stop and names it rather than averaging the
   two into a passing number.
+
+## Expiry
+
+A QR code cannot expire. The pattern is fixed once printed and decodes to the same
+string for ever, so nothing in the image stops working. The Expiry group says this
+on the page rather than implying otherwise, and gives you the two things that are
+real:
+
+- **Tag the link.** Ticking "Add `?exp=` to the link" appends the date as a query
+  parameter, so your own redirect or landing page can check it and stop serving
+  the destination. Nothing outside your control reads it.
+- **Know when to reprint.** The date shows in the readout and in the one-line
+  summary as days remaining, warns inside 14 days, and turns red once passed.
+
+For anything printed, point the code at a URL you control and redirect from there.
+The destination can then move without a reprint.
 
 ## Sizing for print
 

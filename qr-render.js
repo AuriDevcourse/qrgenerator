@@ -25,7 +25,8 @@
     'tbbq-gradient': { label: 'TechBBQ gradient', viewBox: TBBQ_VIEWBOX, d: TBBQ_MARK, fill: 'gradient' },
     'tbbq-red':      { label: 'Founder red',      viewBox: TBBQ_VIEWBOX, d: TBBQ_MARK, fill: '#ce0f2e' },
     'tbbq-white':    { label: 'White',            viewBox: TBBQ_VIEWBOX, d: TBBQ_MARK, fill: '#f2f2f2' },
-    'tbbq-black':    { label: 'Black',            viewBox: TBBQ_VIEWBOX, d: TBBQ_MARK, fill: '#0d0d0d' }
+    'tbbq-black':    { label: 'Black',            viewBox: TBBQ_VIEWBOX, d: TBBQ_MARK, fill: '#0d0d0d' },
+    'tbbq-custom':   { label: 'Pick a colour',    viewBox: TBBQ_VIEWBOX, d: TBBQ_MARK, fill: 'custom' }
   };
 
   function utf8len(str) {
@@ -223,7 +224,7 @@
   // Fit a mark's viewBox into the blanked centre window, preserving aspect ratio.
   var markUid = 0;
 
-  function markMarkup(mark, win, margin) {
+  function markMarkup(mark, win, margin, customFill) {
     var span = win.c1 - win.c0 + 1;
     var pad = 0.6;                       // keep the mark off the live modules
     var side = span - pad * 2;
@@ -234,7 +235,7 @@
     var oy = win.r0 + margin + pad + (side - vbH * scale) / 2;
 
     var out = '';
-    var fill = mark.fill;
+    var fill = mark.fill === 'custom' ? (customFill || '#0d0d0d') : mark.fill;
     if (fill === 'gradient') {
       var id = 'qr-mark-' + (++markUid);
       // objectBoundingBox units, so the gradient spans the mark whatever the scale
@@ -333,7 +334,7 @@
     if (opts.logoPct) {
       var win = logoWindow(m.size, opts.logoPct);
       if (opts.logoMark && MARKS[opts.logoMark]) {
-        body += markMarkup(MARKS[opts.logoMark], win, margin);
+        body += markMarkup(MARKS[opts.logoMark], win, margin, opts.markColor);
       } else if (opts.logoHref) {
         var span = win.c1 - win.c0 + 1;
         var lp = 0.5;
