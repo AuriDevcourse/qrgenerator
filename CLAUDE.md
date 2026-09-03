@@ -117,6 +117,14 @@ back. `verify.html` and the code comments keep the spec terms; the UI does not.
 One accuracy note: the capacity label says **bytes**, not characters. Danish
 `æ` costs two, so "characters" would be wrong.
 
+## Compare grid
+
+Nine shape combinations, each decoded through the same `decodeCheck()` the main
+preview uses. Rendering is gated on the `<details>` being open and debounced from
+`render()`: nine encodes and nine decodes per keystroke would be wasted work while
+it is closed. Decodes run one at a time so the grid stays responsive, and a run
+token drops results from a superseded run.
+
 ## Undo history
 
 Snapshots hold the payload and the look, pushed from `render()` behind a 400 ms

@@ -39,8 +39,13 @@ groups show their current colours as swatches in the header, so you can see the
 palette without opening anything. The TechBBQ mark comes in gradient, founder red,
 white, black or any colour you pick.
 
-The rest folds away: colour, shape and correction, centre mark, caption frame,
-expiry.
+**Compare shapes** puts all nine module-and-eye combinations side by side on your
+own content and colours, decodes each one, and labels it. Click a cell to use it.
+It is the same check the main preview runs, applied nine times, so a look that
+cannot be read says so instead of looking fine.
+
+The rest folds away: colour, shape and correction, compare, centre mark, caption
+frame, expiry.
 Each preset draws itself as a thumbnail so you can pick a look by eye. Colour
 comes as one-click brand pairs, print size as sticker/badge/flyer/poster/banner
 rather than millimetres. Your last eight codes sit one click away. Every change

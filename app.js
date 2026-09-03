@@ -726,6 +726,85 @@
     restore(past.stack[past.at]);
   }
 
+  // ---- compare every shape combination ------------------------------------
+  //
+  // Nine looks on the current content and colours, each decoded. Rendering is
+  // gated on the group being open: nine encodes and nine decodes per keystroke
+  // would be wasted work while it is closed.
+
+  var SHAPE_LABEL = {
+    square: 'Square', rounded: 'Rounded', dots: 'Dots', circle: 'Circle'
+  };
+  var compareRun = 0;
+
+  function compareCombos() {
+    var out = [];
+    ['square', 'rounded', 'dots'].forEach(function (st) {
+      ['square', 'rounded', 'circle'].forEach(function (ey) {
+        out.push({ st: st, ey: ey });
+      });
+    });
+    return out;
+  }
+
+  function renderCompare() {
+    var group = $('#comparegroup');
+    if (!group || !group.open) return;
+    var grid = $('#comparegrid');
+    var text = payload();
+    var my = ++compareRun;
+
+    if (!text) {
+      grid.innerHTML = '<p class="hint">Add some content first.</p>';
+      return;
+    }
+    if (R.utf8len(text) > R.MAX_BYTES[state.ec]) {
+      grid.innerHTML = '<p class="hint">Too much data to compare at this correction level.</p>';
+      return;
+    }
+
+    var combos = compareCombos();
+    grid.innerHTML = combos.map(function (c, i) {
+      var on = c.st === state.style && c.ey === state.eyeStyle;
+      var thumb = R.svg(text, Object.assign({}, opts(), { style: c.st, eyeStyle: c.ey, px: 108 }));
+      return '<button type="button" class="ccell' + (on ? ' on' : '') + '"' +
+        ' data-st="' + c.st + '" data-ey="' + c.ey + '"' +
+        ' aria-pressed="' + on + '">' +
+        '<span class="cthumb" aria-hidden="true">' + thumb + '</span>' +
+        '<span class="cname">' + SHAPE_LABEL[c.st] + ' &middot; ' + SHAPE_LABEL[c.ey] + '</span>' +
+        '<span class="cverdict" data-i="' + i + '">checking</span>' +
+        '</button>';
+    }).join('');
+
+    // Decode one at a time so the grid stays responsive.
+    var i = 0;
+    (function step() {
+      if (my !== compareRun || i >= combos.length) return;
+      var c = combos[i];
+      var o = Object.assign({}, opts(), { style: c.st, eyeStyle: c.ey });
+      decodeCheck(R.svg(text, Object.assign({}, o, { px: 1024 })), text, o)
+        .then(function (res) {
+          if (my !== compareRun) return;
+          var el = grid.querySelector('.cverdict[data-i="' + i + '"]');
+          if (el) {
+            var unknown = res.blocked || res.unavailable;
+            el.textContent = res.ok ? 'scans' : unknown ? 'unchecked' : 'fails';
+            el.className = 'cverdict ' + (res.ok ? 'ok' : unknown ? 'unknown' : 'bad');
+          }
+          i++;
+          setTimeout(step, 0);
+        })
+        .catch(function () { i++; setTimeout(step, 0); });
+    })();
+  }
+
+  var compareTimer = 0;
+
+  function noteCompare() {
+    clearTimeout(compareTimer);
+    compareTimer = setTimeout(renderCompare, 450);
+  }
+
   // ---- design tab render --------------------------------------------------
 
   var token = 0;
@@ -740,6 +819,7 @@
     clearTimeout(recentTimer);
     recentTimer = setTimeout(pushRecent, 2500);
     noteChange();
+    noteCompare();
     var bytes = R.utf8len(text);
     var max = R.MAX_BYTES[state.ec];
 
@@ -1491,6 +1571,21 @@
       navigator.clipboard.writeText(url)
         .then(function () { flash('#share', 'Link copied'); })
         .catch(function () { flash('#share', 'Link is in the address bar'); });
+    });
+
+    $('#comparegroup').addEventListener('toggle', function () {
+      if ($('#comparegroup').open) renderCompare();
+    });
+
+    $('#comparegrid').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-st]');
+      if (!b) return;
+      state.style = b.dataset.st;
+      state.eyeStyle = b.dataset.ey;
+      markSeg($('.seg[data-key="style"]'), state.style);
+      markSeg($('.seg[data-key="eyeStyle"]'), state.eyeStyle);
+      render();
+      renderCompare();
     });
 
     $('#undo').addEventListener('click', undo);

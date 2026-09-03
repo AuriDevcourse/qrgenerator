@@ -810,3 +810,36 @@ input.swatch-val:focus { border-color: var(--foreground); color: var(--foregroun
   display: block; margin-bottom: 2px;
   font: 500 13px var(--font-body); color: var(--foreground);
 }
+
+/* ---- compare grid: nine looks, each with its own verdict --------------- */
+.comparegrid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 10px;
+}
+.ccell {
+  display: grid; gap: 6px; justify-items: center; padding: 8px 6px; cursor: pointer;
+  background: var(--card); color: var(--foreground);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  font: 500 11.5px var(--font-body);
+  transition: border-color .14s, transform .14s;
+}
+.ccell:hover { border-color: var(--outline-line-hi); transform: translateY(-1px) }
+.ccell.on { border-color: var(--foreground); box-shadow: inset 0 0 0 1px var(--foreground) }
+.cthumb {
+  display: block; width: 100%; background: #fff;
+  border-radius: var(--radius-sm); overflow: hidden;
+}
+.cthumb svg { display: block; width: 100%; height: auto }
+/* Two lines are reserved so the longest label wrapping does not make its cell
+   taller than the rest of the row. */
+.cname {
+  text-align: center; line-height: 1.25;
+  min-height: 2.5em; display: flex; align-items: center; justify-content: center;
+}
+.cverdict {
+  font: 600 9.5px var(--font-body); letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--muted);
+}
+.cverdict.ok { color: var(--success) }
+.cverdict.bad { color: var(--red) }
+.cverdict.unknown { color: var(--gray-550) }
