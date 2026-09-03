@@ -1,0 +1,129 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>QR self-test</title>
+<script src="./vendor/qrcode.js"></script>
+<script src="./qr-render.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+  body { background:#f2f2f0; font:12px ui-monospace,SFMono-Regular,monospace; padding:16px; margin:0 }
+  h1 { font:600 15px system-ui; margin:0 0 4px }
+  #sum { font:600 13px system-ui; margin:0 0 14px }
+  #out { display:flex; flex-wrap:wrap; gap:10px }
+  .card { background:#fff; padding:8px; border-radius:8px; width:172px; box-shadow:0 1px 2px #0002 }
+  .card svg { display:block; width:156px; height:156px }
+  .n { margin-top:6px; line-height:1.35 }
+  .pass { color:#087443 } .fail { color:#c0271e } .xfail { color:#8a6d00 }
+</style>
+<body>
+<h1>QR render + decode self-test</h1>
+<p id="sum">running…</p>
+<div id="out"></div>
+<script>
+// Rasterise the generated SVG and read it back with an independent decoder (jsQR).
+// This is the only test that actually proves a code is scannable.
+function rasterize(svgStr, px) {
+  return new Promise(function (res, rej) {
+    var img = new Image();
+    var url = URL.createObjectURL(new Blob([svgStr], { type: 'image/svg+xml' }));
+    img.onload = function () {
+      var cv = document.createElement('canvas');
+      cv.width = cv.height = px;
+      var ctx = cv.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, px, px);
+      ctx.drawImage(img, 0, 0, px, px);
+      URL.revokeObjectURL(url);
+      res(ctx.getImageData(0, 0, px, px));
+    };
+    img.onerror = function () { rej(new Error('svg failed to load')); };
+    img.src = url;
+  });
+}
+
+var P = QRRender.payload;
+var CASES = [];
+
+// every style combination
+['square', 'rounded', 'dots'].forEach(function (style) {
+  ['square', 'rounded', 'circle'].forEach(function (eyeStyle) {
+    CASES.push({ name: style + ' / ' + eyeStyle, text: 'https://techbbq.org/tickets', ec: 'M', style: style, eyeStyle: eyeStyle });
+  });
+});
+
+// error-correction levels
+['L', 'M', 'Q', 'H'].forEach(function (ec) {
+  CASES.push({ name: 'EC ' + ec, text: 'https://techbbq.org/tickets', ec: ec, style: 'rounded', eyeStyle: 'rounded' });
+});
+
+// logo knock-out sizes
+CASES.push({ name: 'logo 20% + EC H', text: 'https://techbbq.org', ec: 'H', style: 'rounded', eyeStyle: 'rounded', logoPct: 0.20 });
+// built-in TechBBQ mark, across the range the UI exposes
+[0.10, 0.20, 0.25, 0.30].forEach(function (pct) {
+  CASES.push({ name: 'TBBQ mark ' + Math.round(pct * 100) + '%', text: 'https://techbbq.org/tickets',
+    ec: 'H', style: 'rounded', eyeStyle: 'rounded', logoMark: 'tbbq-gradient', logoPct: pct });
+});
+CASES.push({ name: 'TBBQ mark, dots+circle', text: 'https://techbbq.org/tickets', ec: 'H',
+  style: 'dots', eyeStyle: 'circle', logoMark: 'tbbq-red', logoPct: 0.22 });
+CASES.push({ name: 'TBBQ mark 35% (over limit)', text: 'https://techbbq.org/tickets', ec: 'H',
+  style: 'rounded', eyeStyle: 'rounded', logoMark: 'tbbq-gradient', logoPct: 0.35, risky: true });
+CASES.push({ name: 'logo 30% + EC H', text: 'https://techbbq.org', ec: 'H', style: 'rounded', eyeStyle: 'rounded', logoPct: 0.30 });
+CASES.push({ name: 'logo 30% + EC L (risky)', text: 'https://techbbq.org', ec: 'L', style: 'rounded', eyeStyle: 'rounded', logoPct: 0.30, risky: true });
+
+// colour + quiet zone
+CASES.push({ name: 'founder red on white (default)', text: 'https://techbbq.org', ec: 'M', fg: '#ce0f2e', bg: '#ffffff', style: 'rounded', eyeStyle: 'rounded' });
+CASES.push({ name: 'brand red on near-black', text: 'https://techbbq.org', ec: 'M', fg: '#ce0f2e', bg: '#0d0d0d', risky: true });
+CASES.push({ name: 'inverted (light on dark)', text: 'https://techbbq.org', ec: 'M', fg: '#ffffff', bg: '#101010', risky: true });
+CASES.push({ name: 'quiet zone 0', text: 'https://techbbq.org', ec: 'M', margin: 0, risky: true });
+CASES.push({ name: 'quiet zone 4 (spec)', text: 'https://techbbq.org', ec: 'M', margin: 4 });
+
+// payload builders
+CASES.push({ name: 'wifi (escaped ; and ,)', text: P.wifi({ ssid: 'TechBBQ Guest', password: 'p@ss;wo,rd', auth: 'WPA' }), ec: 'M', style: 'rounded', eyeStyle: 'rounded' });
+CASES.push({ name: 'vcard', text: P.vcard({ first: 'Auri', last: 'Baciauskas', org: 'TechBBQ', title: 'AI Lead', email: 'abs@techbbq.org' }), ec: 'M' });
+CASES.push({ name: 'mailto', text: P.email({ to: 'abs@techbbq.org', subject: 'Hello' }), ec: 'M' });
+CASES.push({ name: 'sms', text: P.sms({ phone: '+4512345678', message: 'Hi' }), ec: 'M' });
+CASES.push({ name: 'geo (Copenhagen)', text: P.geo({ lat: 55.6761, lng: 12.5683 }), ec: 'M' });
+CASES.push({ name: 'calendar event', text: P.event({ title: 'TechBBQ 2026', location: 'Lokomotivvaerkstedet', start: '2026-09-09T09:00', end: '2026-09-10T18:00' }), ec: 'M' });
+
+// non-ASCII: URLs get percent-encoded (safe); raw text does not (known limitation)
+CASES.push({ name: 'danish URL -> %-encoded', text: P.url({ url: 'techbbq.org/køb-billet' }), ec: 'M' });
+CASES.push({ name: 'raw non-ASCII text', text: 'Hej æøå — København', ec: 'M', xfail: 'no ECI header' });
+
+// capacity
+CASES.push({ name: '1200 chars @ EC L', text: 'A'.repeat(1200), ec: 'L' });
+CASES.push({ name: 'max-ish 2900 @ EC L', text: 'A'.repeat(2900), ec: 'L' });
+
+(function () {
+  var pass = 0, fail = 0, xfail = 0;
+  var out = document.getElementById('out');
+
+  (async function () {
+    for (const c of CASES) {
+      var px = Math.max(420, QRRender.recommendedPx(c.text, c));
+      var card = document.createElement('div');
+      card.className = 'card';
+      out.appendChild(card);
+      var cls, label;
+      try {
+        var svg = QRRender.svg(c.text, Object.assign({}, c, { px: px }));
+        card.innerHTML = QRRender.svg(c.text, Object.assign({}, c, { px: 156 }));
+        var got = jsQR((await rasterize(svg, px)).data, px, px);
+        var ok = !!got && got.data === c.text;
+        if (ok) { pass++; cls = 'pass'; label = 'PASS'; }
+        else if (c.xfail) { xfail++; cls = 'xfail'; label = 'XFAIL (' + c.xfail + ')'; }
+        else if (c.risky) { xfail++; cls = 'xfail'; label = 'XFAIL (known-risky setting)'; }
+        else { fail++; cls = 'fail'; label = 'FAIL'; }
+      } catch (e) {
+        fail++; cls = 'fail'; label = 'ERROR ' + e.message;
+      }
+      card.insertAdjacentHTML('beforeend',
+        '<div class="n"><span class="' + cls + '">' + label + '</span><br>' + c.name +
+        '<br><span style="color:#888">' + QRRender.utf8len(c.text) + ' B · ' + px + 'px</span></div>');
+      console.log('[TEST]', label.split(' ')[0], c.name);
+    }
+    var msg = pass + ' pass · ' + fail + ' fail · ' + xfail + ' expected-fail  (of ' + CASES.length + ')';
+    document.getElementById('sum').textContent = msg;
+    document.getElementById('sum').className = fail ? 'fail' : 'pass';
+    document.title = 'self-test ' + pass + '/' + CASES.length;
+    console.log('[TEST] SUMMARY ' + msg);
+  })();
+})();
+</script>

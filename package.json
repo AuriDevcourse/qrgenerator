@@ -1,0 +1,14 @@
+{
+  "name": "quiet-zone",
+  "version": "1.0.0",
+  "description": "QR code generator that verifies its own output by decoding it",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m http.server 8777",
+    "test": "python3 -m http.server 8777 & open http://127.0.0.1:8777/verify.html",
+    "build": "node build.mjs",
+    "batch": "node batch.mjs"
+  },
+  "license": "MIT",
+  "//": "No \"type\": \"module\" \u2014 qr-render.js is UMD and must stay CommonJS for Node; build/batch are .mjs so they are ESM by extension."
+}

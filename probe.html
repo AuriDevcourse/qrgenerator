@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><title>probe</title>
+<script src="./vendor/qrcode.js"></script>
+<script src="./qr-render.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<body style="font:12px ui-monospace,monospace"><pre id="log"></pre><script>
+const log=m=>document.getElementById('log').textContent+=m+'\n';
+function raster(sv,px){return new Promise((res,rej)=>{const i=new Image();
+ const u=URL.createObjectURL(new Blob([sv],{type:'image/svg+xml'}));
+ i.onload=()=>{const c=document.createElement('canvas');c.width=c.height=px;const x=c.getContext('2d');
+ x.fillStyle='#fff';x.fillRect(0,0,px,px);x.drawImage(i,0,0,px,px);URL.revokeObjectURL(u);
+ res(x.getImageData(0,0,px,px));};i.onerror=()=>rej(new Error('svg'));i.src=u;});}
+async function ok(t,o){const px=Math.max(400,QRRender.recommendedPx(t,o));
+ const d=await raster(QRRender.svg(t,{...o,px}),px);const g=jsQR(d.data,px,px);return !!g&&g.data===t;}
+async function run(label,o,n){let p=0;for(let i=0;i<n;i++){const t='https://techbbq.org/e/'+i;if(await ok(t,o))p++;}
+ log('  '+label.padEnd(30)+p+'/'+n);return p===n;}
+(async()=>{try{
+ log('== circle-eye pupil sweep (ring 3.5) ==');
+ for(const pr of [0,0.5,0.7,1.0,1.2,1.4,1.5]) await run('pupilRadius '+pr,{ec:'M',style:'dots',eyeStyle:'circle',pupilRadius:pr},8);
+ log('');
+ log('== ring sweep (pupil 1.2) ==');
+ for(const rr of [2,2.5,3,3.5]) await run('ring '+rr,{ec:'M',style:'dots',eyeStyle:'circle',eyeRadius:rr,pupilRadius:1.2},8);
+ log('DONE');
+}catch(e){log('ERROR '+e.message)}})();
+</script>
